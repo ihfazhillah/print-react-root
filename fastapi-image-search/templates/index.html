@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Search for Kids</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Fun Image Search</h1>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search for something fun...">
+                <button id="searchBtn">🔍</button>
+            </div>
+            <div class="tags-container" id="tagsContainer"></div>
+        </header>
+
+        <main>
+            <div class="images-grid" id="imagesGrid"></div>
+        </main>
+
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="modalTitle">Related Images</h2>
+                <div class="images-grid" id="relatedGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
