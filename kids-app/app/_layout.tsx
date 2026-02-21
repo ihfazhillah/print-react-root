@@ -9,6 +9,7 @@ import {
   focusManager,
   onlineManager,
 } from '@tanstack/react-query';
+import { ApiClientProvider } from '../src/api/ApiClientProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +45,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack />
+      <ApiClientProvider>
+        <Stack />
+      </ApiClientProvider>
     </QueryClientProvider>
   );
 }

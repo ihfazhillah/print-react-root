@@ -1,6 +1,6 @@
 import type { ApiError, Item, PrintResponse } from '../types/api';
 
-class ApiRequestError extends Error {
+export class ApiRequestError extends Error {
   detail: string;
   status: number;
 
@@ -12,33 +12,41 @@ class ApiRequestError extends Error {
   }
 }
 
-async function request<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({ detail: res.statusText }))) as ApiError;
-    throw new ApiRequestError(res.status, body);
+export interface ApiClient {
+  getItems(skip?: number, limit?: number): Promise<Item[]>;
+  search(q: string, skip?: number, limit?: number): Promise<Item[]>;
+  getRelated(itemIndex: number): Promise<Item[]>;
+  getTags(limit?: number): Promise<string[]>;
+  printImage(url: string): Promise<PrintResponse>;
+  proxyImageUrl(url: string): string;
+}
+
+export function createApiClient(baseUrl: string): ApiClient {
+  async function request<T>(url: string): Promise<T> {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({ detail: res.statusText }))) as ApiError;
+      throw new ApiRequestError(res.status, body);
+    }
+    return res.json() as Promise<T>;
   }
-  return res.json() as Promise<T>;
-}
 
-export function getItems(baseUrl: string, skip = 0, limit = 20): Promise<Item[]> {
-  return request<Item[]>(`${baseUrl}/api/items?skip=${skip}&limit=${limit}`);
-}
+  return {
+    getItems: (skip = 0, limit = 20) =>
+      request<Item[]>(`${baseUrl}/api/items?skip=${skip}&limit=${limit}`),
 
-export function search(baseUrl: string, q: string, skip = 0, limit = 20): Promise<Item[]> {
-  return request<Item[]>(
-    `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
-  );
-}
+    search: (q, skip = 0, limit = 20) =>
+      request<Item[]>(
+        `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
+      ),
 
-export function getRelated(baseUrl: string, itemIndex: number): Promise<Item[]> {
-  return request<Item[]>(`${baseUrl}/api/related/${itemIndex}`);
-}
+    getRelated: (itemIndex) => request<Item[]>(`${baseUrl}/api/related/${itemIndex}`),
 
-export function getTags(baseUrl: string, limit = 10): Promise<string[]> {
-  return request<string[]>(`${baseUrl}/api/tags?limit=${limit}`);
-}
+    getTags: (limit = 10) => request<string[]>(`${baseUrl}/api/tags?limit=${limit}`),
 
-export function printImage(baseUrl: string, url: string): Promise<PrintResponse> {
-  return request<PrintResponse>(`${baseUrl}/api/print-image?url=${encodeURIComponent(url)}`);
+    printImage: (url) =>
+      request<PrintResponse>(`${baseUrl}/api/print-image?url=${encodeURIComponent(url)}`),
+
+    proxyImageUrl: (url) => `${baseUrl}/api/proxy-image?url=${encodeURIComponent(url)}`,
+  };
 }

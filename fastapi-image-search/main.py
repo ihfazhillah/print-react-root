@@ -256,6 +256,19 @@ def convert_to_png(image_bytes: bytes) -> bytes:
     return png_bytes
 
 
+@app.get("/api/proxy-image")
+async def proxy_image(url: str):
+    """Proxy an external image to bypass untrusted SSL certificates"""
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            content_type = response.headers.get("content-type", "image/webp")
+            return Response(content=response.content, media_type=content_type)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
 @app.get("/api/print-image")
 async def get_print_image(url: str):
     """Get print image by scraping krokotak _print page and send to printer"""

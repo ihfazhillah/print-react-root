@@ -266,3 +266,32 @@ Per constitution principle III, development follows this sequence (updated to re
 4. Collections: collection page with Detail/Related sections
 5. Settings: endpoint configuration with AsyncStorage persistence
 6. Polish: empty states, error states, connection handling, accessibility
+
+## 16. Image Loading — SSL Certificate Trust on Android
+
+- **Problem**: `print.krokotak.com` serves thumbnails over HTTPS with an
+  untrusted certificate chain. Android's network stack rejects the
+  connection with `java.security.cert.CertPathValidatorException: Trust
+  anchor for certification path not found`. Both `expo-image` and RN's
+  built-in `Image` component fail; the phone's browser is more lenient.
+- **Decision (current)**: Proxy thumbnails through the FastAPI backend
+  via `/api/proxy-image?url=...`. The backend uses `httpx` with
+  `verify=False`, so it bypasses the SSL issue. The mobile app loads
+  images from `http://{local-backend}/api/proxy-image?url=...` which
+  is trusted HTTP on the local network.
+- **Decision (future)**: When switching from Expo Go to a development
+  build, use the Expo config plugin at
+  `plugins/withNetworkSecurityConfig.js` which injects an Android
+  `network_security_config.xml` trusting system + user CAs for
+  `krokotak.com`. This allows direct image loading without the proxy.
+  Requires `ANDROID_HOME` set up and `npx expo prebuild` +
+  `npx expo run:android`.
+- **Rationale**: The proxy approach works in Expo Go without native
+  toolchain setup. The config plugin is the proper Android-side fix
+  but requires a dev build. Both solutions are in place; the app
+  currently uses the proxy.
+- **Alternatives considered**:
+  - Custom OkHttp SSL factory via native module: too invasive for
+    managed workflow
+  - Downloading certs and bundling in the app: fragile, certs rotate
+  - Ignoring the issue: images don't load, app is unusable

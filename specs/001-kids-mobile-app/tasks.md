@@ -66,21 +66,21 @@ search term, clear search. No tapping/navigation needed.
 
 ### Implementation
 
-- [ ] T013 [P] [US1] Create `useItems` hook in `kids-app/src/hooks/useItems.ts`: `useInfiniteQuery` calling `/api/items` with `skip`/`limit` pagination, `getNextPageParam` returns `skip + PAGE_SIZE` when `page.length === PAGE_SIZE` else `undefined` — per contracts/api-client.md
-- [ ] T014 [P] [US1] Create `useSearch` hook in `kids-app/src/hooks/useSearch.ts`: accepts `query` string, uses `useDebounce(query, 400)` for query key, `useInfiniteQuery` calling `/api/search` with `placeholderData: keepPreviousData`, same pagination logic as `useItems` — per research.md section 6
-- [ ] T015 [P] [US1] Create `useTags` hook in `kids-app/src/hooks/useTags.ts`: `useQuery` calling `/api/tags` with configurable `limit` parameter (default 30), returns sorted tag strings — per contracts/api-client.md
-- [ ] T016 [US1] Create `ImageCard` component in `kids-app/src/components/ImageCard.tsx`: renders `expo-image` `<Image>` with `contentFit="contain"` for aspect-ratio preservation (FR-002), accepts `item: Item` and `onPress` callback, shows thumbnail with large touch target — per data-model.md Item type
-- [ ] T017 [US1] Create `ImageGrid` component in `kids-app/src/components/ImageGrid.tsx`: `FlatList` with `numColumns={3}`, renders `ImageCard` for each item, wires `onEndReached` to `fetchNextPage` with guard `hasNextPage && !isFetchingNextPage`, `onEndReachedThreshold={0.5}`, `ListFooterComponent` shows spinner when fetching, `ListEmptyComponent` shows `EmptyState` — per research.md section 5, FR-002, FR-003
-- [ ] T018 [US1] Create `SearchBar` component in `kids-app/src/components/SearchBar.tsx`: `TextInput` with `onChangeText` updating local state, passes debounced value up via `onSearch` callback, includes clear button that resets input and calls `onSearch("")` — per FR-004, acceptance scenario 3/4
-- [ ] T019 [US1] Implement home screen in `kids-app/app/index.tsx`: renders `SearchBar` at top, `ImageGrid` below; when search text is empty uses `useItems`, when search text is non-empty uses `useSearch`; manages `searchQuery` state; `ImageCard` `onPress` is a no-op placeholder for now — per FR-001, acceptance scenarios 1-5
+- [x] T013 [P] [US1] Create `useItems` hook in `kids-app/src/hooks/useItems.ts`: `useInfiniteQuery` calling `/api/items` with `skip`/`limit` pagination, `getNextPageParam` returns `skip + PAGE_SIZE` when `page.length === PAGE_SIZE` else `undefined` — per contracts/api-client.md
+- [x] T014 [P] [US1] Create `useSearch` hook in `kids-app/src/hooks/useSearch.ts`: accepts `query` string, uses `useDebounce(query, 400)` for query key, `useInfiniteQuery` calling `/api/search` with `placeholderData: keepPreviousData`, same pagination logic as `useItems` — per research.md section 6
+- [x] T015 [P] [US1] Create `useTags` hook in `kids-app/src/hooks/useTags.ts`: `useQuery` calling `/api/tags` with configurable `limit` parameter (default 30), returns sorted tag strings — per contracts/api-client.md
+- [x] T016 [US1] Create `ImageCard` component in `kids-app/src/components/ImageCard.tsx`: renders `expo-image` `<Image>` with `contentFit="contain"` for aspect-ratio preservation (FR-002), accepts `item: Item` and `onPress` callback, shows thumbnail with large touch target — per data-model.md Item type
+- [x] T017 [US1] Create `ImageGrid` component in `kids-app/src/components/ImageGrid.tsx`: `FlatList` with `numColumns={3}`, renders `ImageCard` for each item, wires `onEndReached` to `fetchNextPage` with guard `hasNextPage && !isFetchingNextPage`, `onEndReachedThreshold={0.5}`, `ListFooterComponent` shows spinner when fetching, `ListEmptyComponent` shows `EmptyState` — per research.md section 5, FR-002, FR-003
+- [x] T018 [US1] Create `SearchBar` component in `kids-app/src/components/SearchBar.tsx`: `TextInput` with `onChangeText` updating local state, passes debounced value up via `onSearch` callback, includes clear button that resets input and calls `onSearch("")` — per FR-004, acceptance scenario 3/4
+- [x] T019 [US1] Implement home screen in `kids-app/app/index.tsx`: renders `SearchBar` at top, `ImageGrid` below; when search text is empty uses `useItems`, when search text is non-empty uses `useSearch`; manages `searchQuery` state; `ImageCard` `onPress` is a no-op placeholder for now — per FR-001, acceptance scenarios 1-5
 - [ ] T020 [US1] Verify tracer bullet via Expo Go on physical Android device: app launches, grid shows 3-column thumbnails, infinite scroll loads more pages, search-as-you-type filters results, clearing search restores full list
 
 ### Tests
 
-- [ ] T021 [P] [US1] Write tests for `useItems` hook in `kids-app/__tests__/hooks/useItems.test.ts`: happy-path (returns items), pagination (fetches next page), empty response (no more pages) — mock fetch, wrap in test QueryClientProvider
-- [ ] T022 [P] [US1] Write tests for `useSearch` hook in `kids-app/__tests__/hooks/useSearch.test.ts`: debounced query key, `keepPreviousData` behavior, empty query returns all items — mock fetch, use fake timers for debounce
-- [ ] T023 [P] [US1] Write tests for `SearchBar` component in `kids-app/__tests__/components/SearchBar.test.tsx`: typing fires `onSearch` after debounce, clear button resets input, renders text input
-- [ ] T024 [P] [US1] Write tests for `ImageGrid` component in `kids-app/__tests__/components/ImageGrid.test.tsx`: renders grid of ImageCards, shows empty state when no items, shows loading spinner during fetch
+- [x] T021 [P] [US1] Write tests for `useItems` hook in `kids-app/__tests__/hooks/useItems.test.ts`: happy-path (returns items), pagination (fetches next page), empty response (no more pages) — mock fetch, wrap in test QueryClientProvider
+- [x] T022 [P] [US1] Write tests for `useSearch` hook in `kids-app/__tests__/hooks/useSearch.test.ts`: debounced query key, `keepPreviousData` behavior, empty query returns all items — mock fetch, use fake timers for debounce
+- [x] T023 [P] [US1] Write tests for `SearchBar` component in `kids-app/__tests__/components/SearchBar.test.tsx`: typing fires `onSearch` after debounce, clear button resets input, renders text input
+- [x] T024 [P] [US1] Write tests for `ImageGrid` component in `kids-app/__tests__/components/ImageGrid.test.tsx`: renders grid of ImageCards, shows empty state when no items, shows loading spinner during fetch
 
 **Checkpoint**: User Story 1 complete. App is a fully functional
 image browser with search. Deployable standalone.

@@ -22,7 +22,11 @@
       "package": "com.kidsapp.printreact"
     },
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      "./plugins/withNetworkSecurityConfig"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.kidsapp.printreact"
+    }
   }
 }
