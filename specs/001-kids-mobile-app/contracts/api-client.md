@@ -150,6 +150,36 @@ interface ApiError {
 - Response time varies (network scrape + image conversion + print);
   no client-side timeout per spec
 
+### GET /api/proxy-image
+
+Proxy an external image through the backend to bypass untrusted SSL
+certificates on Android (see research.md section 16).
+
+**Parameters**:
+
+| Param | Type | Location | Description |
+|-------|------|----------|-------------|
+| `url` | string | query | Full external image URL (e.g. krokotak thumbnail) |
+
+**Response** (`200 OK`): Raw image bytes with original `Content-Type`
+header (e.g. `image/webp`).
+
+**Error** (`502 Bad Gateway`):
+
+```typescript
+interface ApiError {
+  detail: string; // Upstream fetch error description
+}
+```
+
+**Used by**: `ApiClient.proxyImageUrl(url)` — returns the proxy URL
+string (no fetch; used as `<Image source={{ uri }}>`).
+
+**Caching**: In-memory LRU, 20 MB budget (~1,400 thumbnails).
+First request fetches from origin; subsequent requests served from RAM.
+
+---
+
 ## React Query Hook Mapping
 
 | Hook | Endpoint | Query Type | Query Key |
@@ -159,6 +189,7 @@ interface ApiError {
 | `useRelated(index)` | `/api/related/{index}` | `useQuery` | `['related', index]` |
 | `useTags(limit?)` | `/api/tags` | `useQuery` | `['tags', limit]` |
 | `usePrintImage()` | `/api/print-image` | `useMutation` | N/A |
+| `proxyImageUrl()` | `/api/proxy-image` | URL builder (sync) | N/A |
 
 ## Error Handling Contract
 

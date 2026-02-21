@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import tempfile
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -256,14 +257,35 @@ def convert_to_png(image_bytes: bytes) -> bytes:
     return png_bytes
 
 
+_image_cache: OrderedDict[str, tuple] = OrderedDict()  # url -> (content_type, bytes)
+_image_cache_bytes = 0
+IMAGE_CACHE_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
+
+
 @app.get("/api/proxy-image")
 async def proxy_image(url: str):
-    """Proxy an external image to bypass untrusted SSL certificates"""
+    """Proxy an external image to bypass untrusted SSL certificates (cached, 20 MB LRU)"""
+    global _image_cache_bytes
+
+    if url in _image_cache:
+        content_type, content = _image_cache[url]
+        return Response(content=content, media_type=content_type)
+
     try:
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.get(url)
             response.raise_for_status()
             content_type = response.headers.get("content-type", "image/webp")
+            size = len(response.content)
+
+            # Evict oldest entries until there's room
+            while _image_cache and _image_cache_bytes + size > IMAGE_CACHE_MAX_BYTES:
+                _, (_, evicted) = _image_cache.popitem(last=False)
+                _image_cache_bytes -= len(evicted)
+
+            _image_cache[url] = (content_type, response.content)
+            _image_cache_bytes += size
+
             return Response(content=response.content, media_type=content_type)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

@@ -286,6 +286,10 @@ Per constitution principle III, development follows this sequence (updated to re
   `krokotak.com`. This allows direct image loading without the proxy.
   Requires `ANDROID_HOME` set up and `npx expo prebuild` +
   `npx expo run:android`.
+- **Caching**: The proxy uses an in-memory `OrderedDict` LRU cache
+  capped at 20 MB (~1,400 thumbnails at ~14 KB each). Evicts oldest
+  entries when the budget is exceeded. First request fetches from
+  krokotak; subsequent requests for the same URL are served from RAM.
 - **Rationale**: The proxy approach works in Expo Go without native
   toolchain setup. The config plugin is the proper Android-side fix
   but requires a dev build. Both solutions are in place; the app
