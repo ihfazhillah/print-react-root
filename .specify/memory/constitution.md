@@ -1,50 +1,183 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!-- Sync Impact Report
+  Version change: 1.0.0 → 1.1.0
+  Modified principles:
+    - IV. User Experience First → expanded with two user personas
+      (admin/developer and children) and per-persona UX rules
+  Added sections: None
+  Removed sections: None
+  Modified sections:
+    - Project Context: updated with multi-folder architecture
+      (fastapi-image-search for backend/admin, mobile app folder
+      for children) and two user personas
+    - Code Quality: added mobile-app language-agnostic guidance
+  Templates requiring updates:
+    - .specify/templates/plan-template.md ✅ no changes needed
+    - .specify/templates/spec-template.md ✅ no changes needed
+    - .specify/templates/tasks-template.md ✅ no changes needed
+  Follow-up TODOs: None
+-->
+
+# print-react Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+All code MUST be clean, readable, and maintainable. This project has
+real users; code quality directly affects reliability and the ability
+to iterate quickly.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- Every function MUST have a single, clear responsibility.
+- Python code MUST follow community conventions (PEP 8, PEP 257 for
+  public APIs) and use type hints for function signatures.
+- Mobile app code MUST follow the platform's idiomatic style guide
+  and conventions for the chosen framework.
+- Dependencies MUST be explicitly declared in `pyproject.toml` with
+  minimum version pins. No undeclared or implicit dependencies.
+- Magic values (URLs, ports, limits) MUST be extracted into named
+  constants or environment variables.
+- Dead code MUST be removed, not commented out.
+- Linting (ruff or flake8) and formatting (ruff format or black) MUST
+  pass before any code is merged.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: A toy project with real users demands the same code
+hygiene as production software. Sloppy code compounds into bugs that
+hurt real people.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. Testing Standards
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Every user-facing behavior MUST be covered by automated tests. Tests
+are the project's safety net and documentation of expected behavior.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- All API endpoints MUST have at least one happy-path test and one
+  error-path test.
+- External service calls (HTTP requests, printer communication) MUST
+  be mocked in tests; tests MUST NOT depend on network availability.
+- Tests MUST be deterministic: no flaky tests, no time-dependent
+  assertions, no order dependencies.
+- New features MUST include tests before the feature is considered
+  complete. Bug fixes MUST include a regression test that reproduces
+  the bug before the fix.
+- Test files MUST mirror source structure (e.g., `test_main.py` tests
+  `main.py`).
+- Test names MUST describe the scenario under test, not the
+  implementation (e.g., `test_search_returns_matching_items` not
+  `test_search_function`).
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rationale**: Real users depend on this project working correctly.
+Tests catch regressions before users do.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### III. Bullet-Tracing Development
+
+New features MUST be built using the bullet-tracing method: deliver a
+thin, end-to-end working slice first, then iterate to fill in depth.
+
+- Start every feature by building the simplest possible path from
+  user action to visible result (the "tracer bullet").
+- The tracer bullet MUST be deployable and demonstrable, even if it
+  handles only the simplest case.
+- Once the tracer bullet works end-to-end, iterate by widening:
+  add error handling, edge cases, performance, and polish in
+  subsequent passes.
+- Each iteration MUST keep the system in a working, deployable state.
+  No half-built features that break existing functionality.
+- Prefer shipping a narrow working feature over a wide broken one.
+
+**Rationale**: This approach validates architecture early, provides
+fast feedback from real users, and prevents the trap of building
+elaborate internal plumbing that never reaches the user. For a toy
+project, it keeps momentum high and waste low.
+
+### IV. User Experience First
+
+This project serves **two distinct users** with different needs.
+Every change MUST be evaluated from the perspective of the user it
+targets. The user experience is the ultimate measure of value.
+
+**User A — Admin (developer/parent)**: Uses the `fastapi-image-search`
+web dashboard for image management, data curation, and system
+oversight.
+
+- Dashboard MUST surface actionable information: image counts, tag
+  coverage, recent activity, and system health.
+- Management operations (import, tag, delete) MUST provide clear
+  progress and confirmation feedback.
+- Error messages MUST include enough technical context to diagnose
+  issues without consulting logs.
+- Admin UI MUST be tested in a real browser before being considered
+  complete.
+
+**User B — Children**: Uses the mobile app to search for and select
+images to print. This is the primary end-user experience.
+
+- The mobile UI MUST be operable by a child: large touch targets,
+  simple navigation, minimal text, visual-first design.
+- Search MUST return relevant results quickly; relevance and speed
+  are more important than completeness.
+- Print operations MUST provide clear, child-friendly feedback:
+  visual success confirmation, simple retry on failure.
+- The app MUST work well on mobile screen sizes and handle
+  intermittent connectivity gracefully.
+- Mobile app changes MUST be tested on a real device or emulator
+  before being considered complete.
+
+**Shared rules (both users)**:
+
+- UI responses MUST feel immediate: provide loading indicators for
+  operations that take more than 200ms.
+- Error messages shown to end users MUST be actionable and written
+  in plain language, not stack traces or technical jargon.
+- Accessibility basics MUST be maintained: semantic structure, alt
+  text on images, sufficient contrast.
+
+**Rationale**: The project serves two audiences with fundamentally
+different needs and technical literacy. A child searching for a
+coloring page and a developer managing the image catalog require
+different UX considerations. Designing for both explicitly prevents
+one audience's needs from being neglected.
+
+## Project Context
+
+- **Project type**: Toy project with real users
+- **Primary use case**: Image search and printing for kids' activities
+  from krokotak.com
+- **Users**:
+  - **Admin (developer/parent)**: Dashboard and image management
+  - **Children**: Search and select images to print via mobile app
+- **Repository structure**:
+  - `fastapi-image-search/` — Python backend and admin dashboard
+    (Tech: Python 3.10+, FastAPI, Jinja2, httpx, BeautifulSoup4;
+    Testing: unittest with FastAPI TestClient)
+  - `<mobile-app>/` — Mobile app for children (tech stack TBD,
+    folder will be created when mobile development begins)
+- **Note**: The project will expand beyond the current backend.
+  Principles apply to all folders and tech stacks equally.
+
+## Development Workflow
+
+- Features MUST follow the bullet-tracing approach: tracer bullet
+  first, then iterative widening.
+- Every PR MUST pass linting, formatting, and all existing tests.
+- Manual browser testing MUST be performed for any UI-facing change.
+- Commit messages MUST be descriptive and reference the change's
+  purpose (not just "fix" or "update").
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution is the authoritative guide for development decisions
+in the print-react project. All contributors and automated agents MUST
+comply with these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- **Amendments**: Any principle change MUST be documented with a
+  rationale, versioned using semantic versioning, and recorded in
+  the Sync Impact Report at the top of this file.
+- **Versioning policy**:
+  - MAJOR: Principle removed or fundamentally redefined.
+  - MINOR: New principle added or existing principle materially
+    expanded.
+  - PATCH: Clarifications, wording fixes, non-semantic refinements.
+- **Compliance**: All code reviews and feature plans MUST verify
+  alignment with these principles. The Constitution Check section in
+  plan templates references this file.
+
+**Version**: 1.1.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-21
