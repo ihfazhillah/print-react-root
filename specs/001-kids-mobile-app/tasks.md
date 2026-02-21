@@ -28,8 +28,12 @@ independently testable increment following the tracer-bullet approach.
 - [ ] T005 [P] Configure ESLint flat config in `kids-app/eslint.config.mjs` using `eslint-config-expo` + Prettier, and create `kids-app/.prettierrc`
 - [ ] T006 [P] Configure Jest in `kids-app/package.json` with `jest-expo` preset and `transformIgnorePatterns` for Expo/RN packages; add `test`, `lint`, and `format` scripts
 
-**Checkpoint**: `npx expo start` launches dev server; `npm test` runs
-(no tests yet); `npm run lint` passes on empty project.
+**Device testing**: No Android emulator. Use **Expo Go** on a physical
+Android device (same Wi-Fi network). Scan the QR code from `npx expo start`.
+
+**Checkpoint**: `npx expo start` launches dev server and QR code is
+scannable from Expo Go; `npm test` runs (no tests yet); `npm run lint`
+passes on empty project.
 
 ---
 
@@ -47,8 +51,8 @@ that ALL user stories depend on
 - [ ] T011 Create API client in `kids-app/src/api/client.ts`: `apiClient` object with typed methods `getItems(skip, limit)`, `search(q, skip, limit)`, `getRelated(itemIndex)`, `getTags(limit)`, `printImage(url)` — all using `fetch()` with base URL from `useServerConfig`; export a `getBaseUrl` helper and individual fetch functions that accept `baseUrl` as parameter — per contracts/api-client.md
 - [ ] T012 Create root layout in `kids-app/app/_layout.tsx`: wrap app in `QueryClientProvider`, configure `onlineManager` with `expo-network`, configure `focusManager` with `AppState`, render `<Stack>` navigator with default screen options — per research.md sections 2 and 3
 
-**Checkpoint**: App launches on Android emulator showing the Expo
-Router default index screen. Types compile. API client importable.
+**Checkpoint**: App launches in Expo Go on physical device showing the
+Expo Router default index screen. Types compile. API client importable.
 
 ---
 
@@ -69,7 +73,7 @@ search term, clear search. No tapping/navigation needed.
 - [ ] T017 [US1] Create `ImageGrid` component in `kids-app/src/components/ImageGrid.tsx`: `FlatList` with `numColumns={3}`, renders `ImageCard` for each item, wires `onEndReached` to `fetchNextPage` with guard `hasNextPage && !isFetchingNextPage`, `onEndReachedThreshold={0.5}`, `ListFooterComponent` shows spinner when fetching, `ListEmptyComponent` shows `EmptyState` — per research.md section 5, FR-002, FR-003
 - [ ] T018 [US1] Create `SearchBar` component in `kids-app/src/components/SearchBar.tsx`: `TextInput` with `onChangeText` updating local state, passes debounced value up via `onSearch` callback, includes clear button that resets input and calls `onSearch("")` — per FR-004, acceptance scenario 3/4
 - [ ] T019 [US1] Implement home screen in `kids-app/app/index.tsx`: renders `SearchBar` at top, `ImageGrid` below; when search text is empty uses `useItems`, when search text is non-empty uses `useSearch`; manages `searchQuery` state; `ImageCard` `onPress` is a no-op placeholder for now — per FR-001, acceptance scenarios 1-5
-- [ ] T020 [US1] Verify tracer bullet on Android emulator/device: app launches, grid shows 3-column thumbnails, infinite scroll loads more pages, search-as-you-type filters results, clearing search restores full list
+- [ ] T020 [US1] Verify tracer bullet via Expo Go on physical Android device: app launches, grid shows 3-column thumbnails, infinite scroll loads more pages, search-as-you-type filters results, clearing search restores full list
 
 ### Tests
 
@@ -102,7 +106,7 @@ with tags and related images, tap Print, see success/error feedback.
 - [ ] T029 [US2] Create `RelatedSection` component in `kids-app/src/components/RelatedSection.tsx`: accepts `itemIndex: number`, uses `useRelated` to fetch related items, renders heading "Related" + grid/row of `ImageCard` components, shows `EmptyState` when empty — per FR-005, edge case (no related items)
 - [ ] T030 [US2] Implement detail screen in `kids-app/app/detail/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, fetches item data, renders large image (expo-image, `contentFit="contain"`), "Detail" section with `TagList`, `PrintButton` wired to `usePrintImage(item.url)`, and `RelatedSection`; Stack header provides back arrow (FR-017) — per acceptance scenarios 1-5
 - [ ] T031 [US2] Update home screen `ImageCard` `onPress` in `kids-app/app/index.tsx`: navigate to `/detail/{itemIndex}` for print items, `/collection/{itemIndex}` for collection items (collection route is placeholder until US3) — compute `itemIndex` as `pageIndex * PAGE_SIZE + indexInPage`
-- [ ] T032 [US2] Verify on Android emulator/device: tap image from grid → detail page shows image, tags, related items; tap Print → loading state → success feedback; tap related image → navigates to its detail page; back arrow returns to home
+- [ ] T032 [US2] Verify via Expo Go on physical Android device: tap image from grid → detail page shows image, tags, related items; tap Print → loading state → success feedback; tap related image → navigates to its detail page; back arrow returns to home
 
 ### Tests
 
@@ -129,7 +133,7 @@ distinct sections, tap an image to reach detail page (US2).
 ### Implementation
 
 - [ ] T036 [US3] Implement collection screen in `kids-app/app/collection/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, uses `useRelated(itemIndex)` to get collection prints (backend returns `prints[]` for collections), renders "Detail" section with collection images and "Related" section with tag-matched images, visually differentiated (separate headings, dividers or background); tapping any image navigates to `/detail/{itemIndex}`; Stack header provides back arrow — per FR-006, FR-007, FR-017, acceptance scenarios 1-3
-- [ ] T037 [US3] Verify on Android emulator/device: tap collection from home → collection page with two distinct sections; tap image from either section → navigates to detail page (US2); back arrow works
+- [ ] T037 [US3] Verify via Expo Go on physical Android device: tap collection from home → collection page with two distinct sections; tap image from either section → navigates to detail page (US2); back arrow works
 
 ### Tests
 
@@ -154,7 +158,7 @@ app, verify endpoint persisted.
 
 - [ ] T039 [US4] Add gear icon to home screen header in `kids-app/app/index.tsx`: add a touchable gear/settings icon in the top area (Stack `headerRight` or custom header component) that navigates to `/settings` — per FR-011
 - [ ] T040 [US4] Implement settings screen in `kids-app/app/settings.tsx`: two `TextInput` fields (IP address, optional port), "Save" button, uses `useServerConfig` to load current values and persist updates; validates IP format before saving (FR-014), shows validation error for invalid IP, uses default port 80 when port is empty; Stack header provides back arrow — per FR-012, FR-013, FR-014, acceptance scenarios 1-5
-- [ ] T041 [US4] Verify on Android emulator/device: tap gear icon → settings opens; enter valid IP + port → saves; close and reopen app → settings persist; enter invalid IP → validation message shown
+- [ ] T041 [US4] Verify via Expo Go on physical Android device: tap gear icon → settings opens; enter valid IP + port → saves; close and reopen app → settings persist; enter invalid IP → validation message shown
 
 ### Tests
 
@@ -177,7 +181,7 @@ final validation across all screens
 - [ ] T048 Add accessibility basics: `accessibilityLabel` on images, `accessibilityRole="button"` on touchables, sufficient contrast on text — per constitution IV shared rules
 - [ ] T049 Run ESLint + Prettier across entire `kids-app/` codebase and fix all violations
 - [ ] T050 Run full test suite (`npm test`) and fix any failures
-- [ ] T051 Final Android device/emulator validation: walk through all 4 user stories end-to-end, verify all acceptance scenarios pass, verify smooth scrolling and <3s load time
+- [ ] T051 Final validation via Expo Go on physical Android device: walk through all 4 user stories end-to-end, verify all acceptance scenarios pass, verify smooth scrolling and <3s load time
 
 ---
 
@@ -276,3 +280,4 @@ constitution principle III (bullet-tracing development).
 - Commit after each task or logical group
 - Stop at any checkpoint to validate independently
 - Constitution requires: tests before feature complete, ESLint/Prettier passing, device testing
+- Device testing uses **Expo Go** on a physical Android device (no emulator)

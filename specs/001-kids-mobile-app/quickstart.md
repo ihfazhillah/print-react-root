@@ -5,8 +5,8 @@
 ## Prerequisites
 
 - Node.js 18+ (LTS recommended)
-- Android Studio with Android SDK (API level 24+)
-- An Android tablet or emulator (7-12 inch, API 24+)
+- A physical Android device with **Expo Go** installed (from Google
+  Play Store), connected to the same Wi-Fi as your dev machine
 - The FastAPI backend running on the local network
   (`fastapi-image-search/`)
 
@@ -23,16 +23,20 @@ npm install
 npx expo start
 ```
 
-## Running on Android
+## Running on Android (Expo Go)
 
 ```bash
-# Option 1: Start with Android target directly
-npx expo start --android
+# Start the dev server
+npx expo start
 
-# Option 2: From the Expo dev server menu, press 'a' for Android
+# Scan the QR code with Expo Go on your Android device
+# (device must be on the same Wi-Fi network as your dev machine)
+```
 
-# Option 3: Build a development APK
-npx expo run:android
+If the QR code connection fails, try tunnel mode:
+
+```bash
+npx expo start --tunnel
 ```
 
 ## Environment Variables
