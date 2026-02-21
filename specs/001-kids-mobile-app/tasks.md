@@ -44,12 +44,12 @@ that ALL user stories depend on
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T007 [P] Define TypeScript types in `kids-app/src/types/api.ts`: `SearchTag`, `BaseItem`, `PrintItem`, `CollectionItem`, `Item` (discriminated union), `ServerConfig`, `PrintResponse`, `ApiError`, and `isCollection` type guard — per data-model.md
-- [ ] T008 [P] Create `useDebounce` hook in `kids-app/src/hooks/useDebounce.ts`: generic `useDebounce<T>(value: T, delay: number): T` using `useState` + `useEffect` + `setTimeout` with cleanup — per research.md section 6
-- [ ] T009 [P] Create `EmptyState` component in `kids-app/src/components/EmptyState.tsx`: accepts a `message` prop, renders a centered child-friendly text message (large font, muted color) — used for FR-016 across all screens
-- [ ] T010 Create `useServerConfig` hook in `kids-app/src/hooks/useServerConfig.ts`: reads `EXPO_PUBLIC_API_IP`/`EXPO_PUBLIC_API_PORT` as default, persists overrides to AsyncStorage key `"server_config"`, exposes `{ config, updateConfig, isLoading }` — per data-model.md ServerConfig entity
-- [ ] T011 Create API client in `kids-app/src/api/client.ts`: `apiClient` object with typed methods `getItems(skip, limit)`, `search(q, skip, limit)`, `getRelated(itemIndex)`, `getTags(limit)`, `printImage(url)` — all using `fetch()` with base URL from `useServerConfig`; export a `getBaseUrl` helper and individual fetch functions that accept `baseUrl` as parameter — per contracts/api-client.md
-- [ ] T012 Create root layout in `kids-app/app/_layout.tsx`: wrap app in `QueryClientProvider`, configure `onlineManager` with `expo-network`, configure `focusManager` with `AppState`, render `<Stack>` navigator with default screen options — per research.md sections 2 and 3
+- [x] T007 [P] Define TypeScript types in `kids-app/src/types/api.ts`: `SearchTag`, `BaseItem`, `PrintItem`, `CollectionItem`, `Item` (discriminated union), `ServerConfig`, `PrintResponse`, `ApiError`, and `isCollection` type guard — per data-model.md
+- [x] T008 [P] Create `useDebounce` hook in `kids-app/src/hooks/useDebounce.ts`: generic `useDebounce<T>(value: T, delay: number): T` using `useState` + `useEffect` + `setTimeout` with cleanup — per research.md section 6
+- [x] T009 [P] Create `EmptyState` component in `kids-app/src/components/EmptyState.tsx`: accepts a `message` prop, renders a centered child-friendly text message (large font, muted color) — used for FR-016 across all screens
+- [x] T010 Create `useServerConfig` hook in `kids-app/src/hooks/useServerConfig.ts`: reads `EXPO_PUBLIC_API_IP`/`EXPO_PUBLIC_API_PORT` as default, persists overrides to AsyncStorage key `"server_config"`, exposes `{ config, updateConfig, isLoading }` — per data-model.md ServerConfig entity
+- [x] T011 Create API client in `kids-app/src/api/client.ts`: `apiClient` object with typed methods `getItems(skip, limit)`, `search(q, skip, limit)`, `getRelated(itemIndex)`, `getTags(limit)`, `printImage(url)` — all using `fetch()` with base URL from `useServerConfig`; export a `getBaseUrl` helper and individual fetch functions that accept `baseUrl` as parameter — per contracts/api-client.md
+- [x] T012 Create root layout in `kids-app/app/_layout.tsx`: wrap app in `QueryClientProvider`, configure `onlineManager` with `expo-network`, configure `focusManager` with `AppState`, render `<Stack>` navigator with default screen options — per research.md sections 2 and 3
 
 **Checkpoint**: App launches in Expo Go on physical device showing the
 Expo Router default index screen. Types compile. API client importable.
