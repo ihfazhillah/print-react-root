@@ -21,12 +21,12 @@ independently testable increment following the tracer-bullet approach.
 
 **Purpose**: Scaffold the Expo project and configure tooling
 
-- [ ] T001 Create Expo project with TypeScript template by running `npx create-expo-app kids-app --template blank-typescript` from the repository root
-- [ ] T002 Install runtime dependencies: `expo-router`, `expo-image`, `@tanstack/react-query`, `@react-native-async-storage/async-storage`, `expo-network`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-screens`, `react-native-safe-area-context` using `npx expo install`
-- [ ] T003 Install dev dependencies: `jest-expo`, `@testing-library/react-native`, `@testing-library/jest-native`, `eslint-config-expo`, `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`
-- [ ] T004 [P] Configure `kids-app/app.json` for Android-only: set `expo.android` config, remove `ios` key, set `scheme` for Expo Router, add `EXPO_PUBLIC_API_IP` and `EXPO_PUBLIC_API_PORT` default env vars in `kids-app/.env`
-- [ ] T005 [P] Configure ESLint flat config in `kids-app/eslint.config.mjs` using `eslint-config-expo` + Prettier, and create `kids-app/.prettierrc`
-- [ ] T006 [P] Configure Jest in `kids-app/package.json` with `jest-expo` preset and `transformIgnorePatterns` for Expo/RN packages; add `test`, `lint`, and `format` scripts
+- [x] T001 Create Expo project with TypeScript template by running `npx create-expo-app kids-app --template blank-typescript` from the repository root
+- [x] T002 Install runtime dependencies: `expo-router`, `expo-image`, `@tanstack/react-query`, `@react-native-async-storage/async-storage`, `expo-network`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-screens`, `react-native-safe-area-context` using `npx expo install`
+- [x] T003 Install dev dependencies: `jest-expo`, `@testing-library/react-native`, `@testing-library/jest-native`, `eslint-config-expo`, `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`
+- [x] T004 [P] Configure `kids-app/app.json` for Android-only: set `expo.android` config, remove `ios` key, set `scheme` for Expo Router, add `EXPO_PUBLIC_API_IP` and `EXPO_PUBLIC_API_PORT` default env vars in `kids-app/.env`
+- [x] T005 [P] Configure ESLint flat config in `kids-app/eslint.config.mjs` using `eslint-config-expo` + Prettier, and create `kids-app/.prettierrc`
+- [x] T006 [P] Configure Jest in `kids-app/package.json` with `jest-expo` preset and `transformIgnorePatterns` for Expo/RN packages; add `test`, `lint`, and `format` scripts
 
 **Device testing**: No Android emulator. Use **Expo Go** on a physical
 Android device (same Wi-Fi network). Scan the QR code from `npx expo start`.
