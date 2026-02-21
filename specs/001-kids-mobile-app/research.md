@@ -183,9 +183,75 @@ Endpoint analysis from `fastapi-image-search/main.py`:
 - **Dataset**: 2,140 items total (93 collections + 2,047 prints),
   333 unique tags.
 
-## 11. Tracer Bullet Strategy
+## 11. Expo SDK 54 Dependency Resolution
 
-Per constitution principle III, development follows this sequence:
+- **Decision**: Use `npm install --legacy-peer-deps` as fallback
+  when `npx expo install` fails
+- **Rationale**: Expo SDK 54 pins `react@19.1.0` but several
+  transitive dependencies (notably `react-dom@19.2.4` via
+  `expo-router`) demand `react@^19.2.4`. This creates an
+  `ERESOLVE` conflict that blocks `npx expo install` for any
+  package that triggers the resolution chain. The
+  `--legacy-peer-deps` flag ignores peer version mismatches,
+  which is safe here because Expo's own compatibility matrix
+  already validates these pairings.
+- **Affected packages**: `babel-preset-expo`, `react-native-worklets`,
+  `@testing-library/react-native`, `jest`
+
+## 12. Reanimated v4 Babel Toolchain
+
+- **Decision**: Explicit `babel.config.js` + separate
+  `react-native-worklets` install
+- **Rationale**: Expo SDK 54 no longer ships a `babel.config.js`
+  (the preset is applied internally by Metro). However,
+  `react-native-reanimated` v4.x requires its Babel plugin to be
+  declared explicitly. That plugin in turn imports
+  `react-native-worklets/plugin` at transform time, which is a
+  new separate package in the v4 reanimated ecosystem. Without
+  both pieces, Metro throws `Cannot find module` at bundle time.
+  Additionally, `babel-preset-expo` may be nested inside
+  `expo/node_modules/` rather than hoisted, so it must also be
+  installed explicitly when an explicit `babel.config.js` exists.
+- **Required setup**:
+  1. `npx expo install react-native-worklets`
+  2. `npm install babel-preset-expo --legacy-peer-deps`
+  3. Create `babel.config.js` with `babel-preset-expo` preset and
+     `react-native-reanimated/plugin`
+  4. Restart Metro with `npx expo start --clear`
+
+## 13. ESLint 9 vs 10 Compatibility
+
+- **Decision**: Pin ESLint to v9.x (`eslint@^9`)
+- **Rationale**: ESLint 10.x removed the legacy `getFilename()`
+  API that `eslint-plugin-react` still depends on, causing a
+  runtime crash. `eslint-config-expo` bundles `eslint-plugin-react`
+  and hasn't yet updated for the v10 API change.
+  Additionally, flat config imports require the explicit `.js`
+  extension (`eslint-config-expo/flat.js`) and the `defineConfig`
+  wrapper is not re-exported — use a plain array export instead.
+- **Alternatives considered**:
+  - ESLint 10 with patched plugin: unstable, not upstream-supported
+
+## 14. Testing Toolchain (React 19 + Expo SDK 54)
+
+- **Decision**: `jest-expo@~54.0.17` + `jest@^30.2.0` +
+  `@testing-library/react-native@^13.3.x` (no `jest-native`)
+- **Rationale**: Three gotchas emerged:
+  1. `jest-expo` does not declare `jest` as a direct dependency —
+     it must be installed explicitly.
+  2. `@testing-library/jest-native` is deprecated; its matchers
+     are now built into `@testing-library/react-native` v13.3.x
+     at path `build/matchers/extend-expect`.
+  3. The Jest config key is `setupFiles` (not
+     `setupFilesAfterSetup`, which doesn't exist).
+- **Known issue**: Expo recommends `jest@~29.7.0` but v30 was
+  installed; `jest-watch-typeahead` (a `jest-expo` dep) has a
+  peer requirement of `jest@^27|^28|^29`, producing a warning
+  but no runtime failure so far.
+
+## 15. Tracer Bullet Strategy
+
+Per constitution principle III, development follows this sequence (updated to reflect Expo Go on physical device):
 
 **Tracer bullet (first deployable slice)**:
 1. Scaffold Expo project with TypeScript, Expo Router, React Query
