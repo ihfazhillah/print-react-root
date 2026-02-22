@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter } from 'expo-router';
@@ -19,15 +19,25 @@ export default function HomeScreen() {
   const searchQ = useSearch(searchQuery);
 
   const activeQuery = isSearching ? searchQ : itemsQuery;
-  const items = activeQuery.data?.pages.flat() ?? [];
+  const items = useMemo(() => activeQuery.data?.pages.flat() ?? [], [activeQuery.data?.pages]);
 
-  const handleItemPress = (item: Item, globalIndex: number) => {
-    const route = isCollection(item) ? '/collection/[id]' : '/detail/[id]';
-    router.push({
-      pathname: route,
-      params: { id: String(globalIndex), item: JSON.stringify(item) },
-    });
-  };
+  const handleItemPress = useCallback(
+    (item: Item, globalIndex: number) => {
+      const route = isCollection(item) ? '/collection/[id]' : '/detail/[id]';
+      router.push({
+        pathname: route,
+        params: { id: String(globalIndex), item: JSON.stringify(item) },
+      });
+    },
+    [router],
+  );
+
+  const handleEndReached = useCallback(
+    () => activeQuery.fetchNextPage(),
+    [activeQuery.fetchNextPage],
+  );
+
+  const handleRetry = useCallback(() => activeQuery.refetch(), [activeQuery.refetch]);
 
   return (
     <View style={styles.container}>
@@ -51,12 +61,12 @@ export default function HomeScreen() {
       <ImageGrid
         items={items}
         onItemPress={handleItemPress}
-        onEndReached={() => activeQuery.fetchNextPage()}
+        onEndReached={handleEndReached}
         hasNextPage={!!activeQuery.hasNextPage}
         isFetchingNextPage={activeQuery.isFetchingNextPage}
         isLoading={activeQuery.isLoading}
         isError={activeQuery.isError}
-        onRetry={() => activeQuery.refetch()}
+        onRetry={handleRetry}
         emptyMessage={isSearching ? 'No images found' : 'No images available'}
       />
     </View>

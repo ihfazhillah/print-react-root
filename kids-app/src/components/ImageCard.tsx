@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useApiClient } from '../api/apiClientContext';
@@ -10,7 +11,7 @@ interface ImageCardProps {
   onPress: () => void;
 }
 
-export function ImageCard({ item, onPress }: ImageCardProps) {
+export const ImageCard = memo(function ImageCard({ item, onPress }: ImageCardProps) {
   const client = useApiClient();
 
   return (
@@ -33,7 +34,7 @@ export function ImageCard({ item, onPress }: ImageCardProps) {
       )}
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

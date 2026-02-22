@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import type { Item } from '../types/api';
 import { ImageCard } from './ImageCard';
@@ -26,6 +27,19 @@ export function ImageGrid({
   onRetry,
   emptyMessage = 'Nothing to show',
 }: ImageGridProps) {
+  const renderItem = useCallback(
+    ({ item, index }: { item: Item; index: number }) => (
+      <ImageCard item={item} onPress={() => onItemPress(item, index)} />
+    ),
+    [onItemPress],
+  );
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      onEndReached();
+    }
+  }, [hasNextPage, isFetchingNextPage, onEndReached]);
+
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -42,16 +56,14 @@ export function ImageGrid({
     <FlatList
       data={items}
       numColumns={3}
-      keyExtractor={(_, index) => String(index)}
-      renderItem={({ item, index }) => (
-        <ImageCard item={item} onPress={() => onItemPress(item, index)} />
-      )}
-      onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) {
-          onEndReached();
-        }
-      }}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      onEndReached={handleEndReached}
       onEndReachedThreshold={0.5}
+      removeClippedSubviews
+      windowSize={5}
+      maxToRenderPerBatch={9}
+      initialNumToRender={12}
       ListFooterComponent={
         isFetchingNextPage ? <ActivityIndicator style={styles.footer} size="small" /> : null
       }
@@ -59,6 +71,10 @@ export function ImageGrid({
       contentContainerStyle={items.length === 0 ? styles.emptyContainer : styles.gridContent}
     />
   );
+}
+
+function keyExtractor(item: Item) {
+  return item.url;
 }
 
 const styles = StyleSheet.create({
