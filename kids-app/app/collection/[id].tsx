@@ -1,0 +1,125 @@
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useApiClient } from '../../src/api/apiClientContext';
+import { ImageCard } from '../../src/components/ImageCard';
+import { EmptyState } from '../../src/components/EmptyState';
+import { isCollection } from '../../src/types/api';
+import type { CollectionItem, Item } from '../../src/types/api';
+
+export default function CollectionScreen() {
+  const { id, item: itemJson } = useLocalSearchParams<{ id: string; item: string }>();
+  const itemIndex = Number(id);
+  const router = useRouter();
+  const client = useApiClient();
+
+  const item: CollectionItem | null = (() => {
+    try {
+      const parsed = JSON.parse(itemJson ?? '') as Item;
+      return isCollection(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const tag = item?.searches[0]?.text ?? '';
+
+  const { data: related, isLoading: isRelatedLoading } = useQuery<Item[], Error>({
+    queryKey: ['collection-related', tag],
+    queryFn: () => client.search(tag, 0, 30),
+    enabled: tag.length > 0,
+    select: (items) => items.filter((i) => i.url !== item?.url),
+  });
+
+  if (!item) return null;
+
+  const title = item.searches[0]?.text ?? 'Collection';
+  const collectionPrints = item.prints ?? [];
+
+  const handleImagePress = (pressedItem: Item) => {
+    const route = isCollection(pressedItem) ? '/collection/[id]' : '/detail/[id]';
+    router.push({
+      pathname: route,
+      params: { id: String(itemIndex), item: JSON.stringify(pressedItem) },
+    });
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.heading}>Detail</Text>
+          {collectionPrints.length > 0 ? (
+            <FlatList
+              data={collectionPrints}
+              numColumns={3}
+              scrollEnabled={false}
+              keyExtractor={(_, i) => `detail-${i}`}
+              contentContainerStyle={styles.grid}
+              renderItem={({ item: printItem }) => (
+                <ImageCard item={printItem} onPress={() => handleImagePress(printItem)} />
+              )}
+            />
+          ) : (
+            <EmptyState message="No images in this collection" />
+          )}
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>Related</Text>
+          {isRelatedLoading ? (
+            <ActivityIndicator style={styles.loader} size="small" />
+          ) : related && related.length > 0 ? (
+            <FlatList
+              data={related}
+              numColumns={3}
+              scrollEnabled={false}
+              keyExtractor={(_, i) => `related-${i}`}
+              contentContainerStyle={styles.grid}
+              renderItem={({ item: relatedItem }) => (
+                <ImageCard item={relatedItem} onPress={() => handleImagePress(relatedItem)} />
+              )}
+            />
+          ) : (
+            <EmptyState message="No related images" />
+          )}
+        </View>
+      </ScrollView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    paddingBottom: 32,
+  },
+  section: {
+    paddingVertical: 12,
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  grid: {
+    paddingHorizontal: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 12,
+    marginVertical: 8,
+  },
+  loader: {
+    paddingVertical: 24,
+  },
+});

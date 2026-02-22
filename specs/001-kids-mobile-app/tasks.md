@@ -132,12 +132,12 @@ distinct sections, tap an image to reach detail page (US2).
 
 ### Implementation
 
-- [ ] T036 [US3] Implement collection screen in `kids-app/app/collection/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, uses `useRelated(itemIndex)` to get collection prints (backend returns `prints[]` for collections), renders "Detail" section with collection images and "Related" section with tag-matched images, visually differentiated (separate headings, dividers or background); tapping any image navigates to `/detail/{itemIndex}`; Stack header provides back arrow — per FR-006, FR-007, FR-017, acceptance scenarios 1-3
+- [x] T036 [US3] Implement collection screen in `kids-app/app/collection/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, uses `useRelated(itemIndex)` to get collection prints (backend returns `prints[]` for collections), renders "Detail" section with collection images and "Related" section with tag-matched images, visually differentiated (separate headings, dividers or background); tapping any image navigates to `/detail/{itemIndex}`; Stack header provides back arrow — per FR-006, FR-007, FR-017, acceptance scenarios 1-3
 - [ ] T037 [US3] Verify via Expo Go on physical Android device: tap collection from home → collection page with two distinct sections; tap image from either section → navigates to detail page (US2); back arrow works
 
 ### Tests
 
-- [ ] T038 [P] [US3] Write tests for collection screen in `kids-app/__tests__/screens/collection.test.tsx`: renders Detail and Related sections, visually distinct headings, tapping image navigates to detail, shows empty state for empty sections — use `renderRouter`
+- [x] T038 [P] [US3] Write tests for collection screen in `kids-app/__tests__/screens/collection.test.tsx`: renders Detail and Related sections, visually distinct headings, tapping image navigates to detail, shows empty state for empty sections — use `renderRouter`
 
 **Checkpoint**: User Stories 1 + 2 + 3 complete. Full browsing
 experience: home grid → collections → individual images → print.
