@@ -99,20 +99,20 @@ with tags and related images, tap Print, see success/error feedback.
 
 ### Implementation
 
-- [ ] T025 [P] [US2] Create `useRelated` hook in `kids-app/src/hooks/useRelated.ts`: `useQuery` calling `/api/related/{itemIndex}`, accepts `itemIndex: number`, returns `Item[]` — per contracts/api-client.md
-- [ ] T026 [P] [US2] Create `usePrintImage` hook in `kids-app/src/hooks/usePrintImage.ts`: `useMutation` calling `/api/print-image?url=...`, accepts print URL string, `retry: false` (user retaps manually), returns `{ mutate, isPending, isSuccess, isError, error }` — per contracts/api-client.md
-- [ ] T027 [P] [US2] Create `TagList` component in `kids-app/src/components/TagList.tsx`: accepts `tags: SearchTag[]`, renders horizontal scrollable row of tag chips showing `tag.text` — per data-model.md SearchTag
-- [ ] T028 [P] [US2] Create `PrintButton` component in `kids-app/src/components/PrintButton.tsx`: accepts `onPrint` callback, shows "Print" label, disables with loading spinner while `isPending`, shows success confirmation on `isSuccess` (auto-dismisses after 2s), shows child-friendly error on `isError` with retry — per FR-008, FR-009, FR-010
-- [ ] T029 [US2] Create `RelatedSection` component in `kids-app/src/components/RelatedSection.tsx`: accepts `itemIndex: number`, uses `useRelated` to fetch related items, renders heading "Related" + grid/row of `ImageCard` components, shows `EmptyState` when empty — per FR-005, edge case (no related items)
-- [ ] T030 [US2] Implement detail screen in `kids-app/app/detail/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, fetches item data, renders large image (expo-image, `contentFit="contain"`), "Detail" section with `TagList`, `PrintButton` wired to `usePrintImage(item.url)`, and `RelatedSection`; Stack header provides back arrow (FR-017) — per acceptance scenarios 1-5
-- [ ] T031 [US2] Update home screen `ImageCard` `onPress` in `kids-app/app/index.tsx`: navigate to `/detail/{itemIndex}` for print items, `/collection/{itemIndex}` for collection items (collection route is placeholder until US3) — compute `itemIndex` as `pageIndex * PAGE_SIZE + indexInPage`
+- [x] T025 [P] [US2] Create `useRelated` hook in `kids-app/src/hooks/useRelated.ts`: `useQuery` calling `/api/related/{itemIndex}`, accepts `itemIndex: number`, returns `Item[]` — per contracts/api-client.md
+- [x] T026 [P] [US2] Create `usePrintImage` hook in `kids-app/src/hooks/usePrintImage.ts`: `useMutation` calling `/api/print-image?url=...`, accepts print URL string, `retry: false` (user retaps manually), returns `{ mutate, isPending, isSuccess, isError, error }` — per contracts/api-client.md
+- [x] T027 [P] [US2] Create `TagList` component in `kids-app/src/components/TagList.tsx`: accepts `tags: SearchTag[]`, renders horizontal scrollable row of tag chips showing `tag.text` — per data-model.md SearchTag
+- [x] T028 [P] [US2] Create `PrintButton` component in `kids-app/src/components/PrintButton.tsx`: accepts `onPrint` callback, shows "Print" label, disables with loading spinner while `isPending`, shows success confirmation on `isSuccess` (auto-dismisses after 2s), shows child-friendly error on `isError` with retry — per FR-008, FR-009, FR-010
+- [x] T029 [US2] Create `RelatedSection` component in `kids-app/src/components/RelatedSection.tsx`: accepts `itemIndex: number`, uses `useRelated` to fetch related items, renders heading "Related" + grid/row of `ImageCard` components, shows `EmptyState` when empty — per FR-005, edge case (no related items)
+- [x] T030 [US2] Implement detail screen in `kids-app/app/detail/[id].tsx`: reads `id` param (item index) via `useLocalSearchParams`, fetches item data, renders large image (expo-image, `contentFit="contain"`), "Detail" section with `TagList`, `PrintButton` wired to `usePrintImage(item.url)`, and `RelatedSection`; Stack header provides back arrow (FR-017) — per acceptance scenarios 1-5
+- [x] T031 [US2] Update home screen `ImageCard` `onPress` in `kids-app/app/index.tsx`: navigate to `/detail/{itemIndex}` for print items, `/collection/{itemIndex}` for collection items (collection route is placeholder until US3) — compute `itemIndex` as `pageIndex * PAGE_SIZE + indexInPage`
 - [ ] T032 [US2] Verify via Expo Go on physical Android device: tap image from grid → detail page shows image, tags, related items; tap Print → loading state → success feedback; tap related image → navigates to its detail page; back arrow returns to home
 
 ### Tests
 
-- [ ] T033 [P] [US2] Write tests for `usePrintImage` hook in `kids-app/__tests__/hooks/usePrintImage.test.ts`: success response, error response (500), no retry on failure — mock fetch
-- [ ] T034 [P] [US2] Write tests for `PrintButton` component in `kids-app/__tests__/components/PrintButton.test.tsx`: shows "Print" label, disables during loading, shows success message, shows error message with retry
-- [ ] T035 [P] [US2] Write tests for detail screen in `kids-app/__tests__/screens/detail.test.tsx`: renders image, tags, related section, print button; handles missing related items with empty state — use `renderRouter` from `expo-router/testing-library`
+- [x] T033 [P] [US2] Write tests for `usePrintImage` hook in `kids-app/__tests__/hooks/usePrintImage.test.ts`: success response, error response (500), no retry on failure — mock fetch
+- [x] T034 [P] [US2] Write tests for `PrintButton` component in `kids-app/__tests__/components/PrintButton.test.tsx`: shows "Print" label, disables during loading, shows success message, shows error message with retry
+- [x] T035 [P] [US2] Write tests for detail screen in `kids-app/__tests__/screens/detail.test.tsx`: renders image, tags, related section, print button; handles missing related items with empty state — use `renderRouter` from `expo-router/testing-library`
 
 **Checkpoint**: User Stories 1 + 2 complete. Child can browse, search,
 view details, and print. Core end-to-end flow works.

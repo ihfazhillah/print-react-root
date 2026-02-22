@@ -48,9 +48,7 @@ export function ImageGrid({
         isFetchingNextPage ? <ActivityIndicator style={styles.footer} size="small" /> : null
       }
       ListEmptyComponent={<EmptyState message={emptyMessage} />}
-      contentContainerStyle={
-        items.length === 0 ? styles.emptyContainer : styles.gridContent
-      }
+      contentContainerStyle={items.length === 0 ? styles.emptyContainer : styles.gridContent}
     />
   );
 }
