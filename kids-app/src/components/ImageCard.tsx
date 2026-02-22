@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useApiClient } from '../api/apiClientContext';
 import { isCollection } from '../types/api';
+import { colors } from '../theme';
 import type { Item } from '../types/api';
 
 interface ImageCardProps {
@@ -43,21 +44,21 @@ const styles = StyleSheet.create({
   image: {
     flex: 1,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.placeholder,
   },
   ribbon: {
     position: 'absolute',
     bottom: 8,
     left: 4,
     right: 4,
-    backgroundColor: 'rgba(90, 60, 180, 0.85)',
+    backgroundColor: colors.ribbon,
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
     paddingVertical: 3,
     alignItems: 'center',
   },
   ribbonText: {
-    color: '#fff',
+    color: colors.textOnPrimary,
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',

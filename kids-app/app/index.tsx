@@ -7,6 +7,7 @@ import { ImageGrid } from '../src/components/ImageGrid';
 import { useItems } from '../src/hooks/useItems';
 import { useSearch } from '../src/hooks/useSearch';
 import { isCollection } from '../src/types/api';
+import { colors } from '../src/theme';
 import type { Item } from '../src/types/api';
 
 export default function HomeScreen() {
@@ -32,6 +33,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
+          title: 'Browse',
           headerRight: () => (
             <Pressable
               onPress={() => router.push('/settings')}
@@ -53,6 +55,8 @@ export default function HomeScreen() {
         hasNextPage={!!activeQuery.hasNextPage}
         isFetchingNextPage={activeQuery.isFetchingNextPage}
         isLoading={activeQuery.isLoading}
+        isError={activeQuery.isError}
+        onRetry={() => activeQuery.refetch()}
         emptyMessage={isSearching ? 'No images found' : 'No images available'}
       />
     </View>
@@ -62,12 +66,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   gearButton: {
     padding: 8,
   },
   gearIcon: {
     fontSize: 24,
+    color: colors.textPrimary,
   },
 });

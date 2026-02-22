@@ -174,13 +174,13 @@ app, verify endpoint persisted.
 **Purpose**: Error handling, empty states, accessibility, and
 final validation across all screens
 
-- [ ] T044 [P] Add connection error state to home screen in `kids-app/app/index.tsx`: when `useItems`/`useSearch` returns `isError`, show child-friendly "Cannot connect to server" message with retry button — per FR-015, edge case
-- [ ] T045 [P] Add connection error state to detail screen in `kids-app/app/detail/[id].tsx`: handle `useRelated` error with child-friendly message — per FR-015
-- [ ] T046 [P] Add connection error state to collection screen in `kids-app/app/collection/[id].tsx`: handle `useRelated` error with child-friendly message — per FR-015
-- [ ] T047 Verify all empty-state messages across screens: search with no results, collection with no prints, image with no related items — per FR-016, edge cases
-- [ ] T048 Add accessibility basics: `accessibilityLabel` on images, `accessibilityRole="button"` on touchables, sufficient contrast on text — per constitution IV shared rules
-- [ ] T049 Run ESLint + Prettier across entire `kids-app/` codebase and fix all violations
-- [ ] T050 Run full test suite (`npm test`) and fix any failures
+- [x] T044 [P] Add connection error state to home screen in `kids-app/app/index.tsx`: when `useItems`/`useSearch` returns `isError`, show child-friendly "Cannot connect to server" message with retry button — per FR-015, edge case
+- [x] T045 [P] Add connection error state to detail screen in `kids-app/app/detail/[id].tsx`: handle `useRelated` error with child-friendly message — per FR-015
+- [x] T046 [P] Add connection error state to collection screen in `kids-app/app/collection/[id].tsx`: handle `useRelated` error with child-friendly message — per FR-015
+- [x] T047 Verify all empty-state messages across screens: search with no results, collection with no prints, image with no related items — per FR-016, edge cases
+- [x] T048 Add accessibility basics: `accessibilityLabel` on images, `accessibilityRole="button"` on touchables, sufficient contrast on text — per constitution IV shared rules
+- [x] T049 Run ESLint + Prettier across entire `kids-app/` codebase and fix all violations
+- [x] T050 Run full test suite (`npm test`) and fix any failures
 - [ ] T051 Final validation via Expo Go on physical Android device: walk through all 4 user stories end-to-end, verify all acceptance scenarios pass, verify smooth scrolling and <3s load time
 
 ---

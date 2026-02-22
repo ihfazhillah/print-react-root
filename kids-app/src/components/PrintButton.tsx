@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors } from '../theme';
 
 interface PrintButtonProps {
   onPrint: () => void;
@@ -62,7 +63,7 @@ export function PrintButton({
       accessibilityLabel="Print image"
     >
       {isPending ? (
-        <ActivityIndicator color="#fff" size="small" />
+        <ActivityIndicator color={colors.textOnPrimary} size="small" />
       ) : (
         <Text style={styles.buttonText}>Print</Text>
       )}
@@ -72,7 +73,7 @@ export function PrintButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 32,
@@ -84,18 +85,18 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   successButton: {
-    backgroundColor: '#81C784',
+    backgroundColor: colors.success,
   },
   retryButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: colors.retry,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.textOnPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
   successText: {
-    color: '#fff',
+    color: colors.textOnPrimary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#D32F2F',
+    color: colors.errorText,
     textAlign: 'center',
   },
 });

@@ -2,6 +2,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { useRelated } from '../hooks/useRelated';
 import { ImageCard } from './ImageCard';
 import { EmptyState } from './EmptyState';
+import { colors } from '../theme';
 import type { Item } from '../types/api';
 
 interface RelatedSectionProps {
@@ -10,10 +11,14 @@ interface RelatedSectionProps {
 }
 
 export function RelatedSection({ itemIndex, onItemPress }: RelatedSectionProps) {
-  const { data: related, isLoading } = useRelated(itemIndex);
+  const { data: related, isLoading, isError, refetch } = useRelated(itemIndex);
 
   if (isLoading) {
     return <ActivityIndicator style={styles.loader} size="small" />;
+  }
+
+  if (isError) {
+    return <EmptyState message="Could not load related images" onRetry={() => refetch()} />;
   }
 
   if (!related || related.length === 0) {
@@ -44,7 +49,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.textPrimary,
     paddingHorizontal: 12,
     marginBottom: 8,
   },

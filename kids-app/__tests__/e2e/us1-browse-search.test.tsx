@@ -15,7 +15,6 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiClientContext } from '../../src/api/apiClientContext';
 import { createMockClient, fakePrintItems } from '../helpers/renderWithProviders';
-import type { Item } from '../../src/types/api';
 
 // Mock navigation — we only care that it's called, not the implementation
 const mockPush = jest.fn();
@@ -157,7 +156,9 @@ test('AS-5: tapping an image navigates to detail', async () => {
   const buttons = await findAllByRole('button');
   // First button might be the gear icon; find image buttons
   const imageButtons = buttons.filter(
-    (b) => b.props.accessibilityLabel?.startsWith('Image:') || b.props.accessibilityLabel?.startsWith('Collection:'),
+    (b) =>
+      b.props.accessibilityLabel?.startsWith('Image:') ||
+      b.props.accessibilityLabel?.startsWith('Collection:'),
   );
   expect(imageButtons.length).toBeGreaterThan(0);
 

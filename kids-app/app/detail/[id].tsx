@@ -6,6 +6,7 @@ import { usePrintImage } from '../../src/hooks/usePrintImage';
 import { TagList } from '../../src/components/TagList';
 import { PrintButton } from '../../src/components/PrintButton';
 import { RelatedSection } from '../../src/components/RelatedSection';
+import { colors } from '../../src/theme';
 import type { Item } from '../../src/types/api';
 
 export default function DetailScreen() {
@@ -68,7 +69,7 @@ export default function DetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   content: {
     paddingBottom: 32,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
   heroImage: {
     width: '100%',
     aspectRatio: 3 / 4,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.placeholder,
   },
   section: {
     paddingHorizontal: 12,

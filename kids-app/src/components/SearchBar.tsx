@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { colors } from '../theme';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 12,
     marginVertical: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
   },
@@ -64,6 +65,6 @@ const styles = StyleSheet.create({
   },
   clearText: {
     fontSize: 16,
-    color: '#888',
+    color: colors.textSecondary,
   },
 });

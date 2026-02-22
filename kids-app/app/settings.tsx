@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useServerConfig } from '../src/hooks/useServerConfig';
+import { colors } from '../src/theme';
 
 const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
 
@@ -94,43 +95,43 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 20,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.textPrimary,
     marginTop: 16,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fafafa',
+    backgroundColor: colors.surface,
   },
   error: {
-    color: '#d32f2f',
+    color: colors.errorText,
     fontSize: 14,
     marginTop: 12,
   },
   success: {
-    color: '#2e7d32',
+    color: colors.successText,
     fontSize: 14,
     marginTop: 12,
   },
   saveButton: {
-    backgroundColor: '#4a90d9',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 24,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { SearchTag } from '../types/api';
+import { colors } from '../theme';
 
 interface TagListProps {
   tags: SearchTag[];
@@ -30,13 +31,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#e8e8e8',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
   chipText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.textPrimary,
   },
 });

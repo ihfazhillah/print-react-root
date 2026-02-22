@@ -5,6 +5,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(() => Promise.resolve()),
 }));
 
+// eslint-disable-next-line import/first
 import { useServerConfig, type KvStorage } from '../../src/hooks/useServerConfig';
 
 function createMemoryStorage(initial: Record<string, string> = {}): KvStorage {

@@ -137,9 +137,7 @@ test('AS-5: tapping related image navigates to its detail page', async () => {
 
   // Wait for related items to load and find image buttons
   const buttons = await findAllByRole('button');
-  const imageButtons = buttons.filter(
-    (b) => b.props.accessibilityLabel?.startsWith('Image:'),
-  );
+  const imageButtons = buttons.filter((b) => b.props.accessibilityLabel?.startsWith('Image:'));
 
   // Tap a related image
   if (imageButtons.length > 0) {

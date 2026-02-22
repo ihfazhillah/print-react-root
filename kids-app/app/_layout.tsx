@@ -10,6 +10,7 @@ import {
   onlineManager,
 } from '@tanstack/react-query';
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
+import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,12 +47,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider>
-        <Stack>
-          <Stack.Screen name="index" options={{ title: 'Browse' }} />
-          <Stack.Screen name="detail/[id]" options={{ title: 'Detail' }} />
-          <Stack.Screen name="collection/[id]" options={{ title: 'Collection' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
-        </Stack>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.textPrimary,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
       </ApiClientProvider>
     </QueryClientProvider>
   );

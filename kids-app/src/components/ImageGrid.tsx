@@ -10,6 +10,8 @@ interface ImageGridProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   emptyMessage?: string;
 }
 
@@ -20,6 +22,8 @@ export function ImageGrid({
   hasNextPage,
   isFetchingNextPage,
   isLoading,
+  isError,
+  onRetry,
   emptyMessage = 'Nothing to show',
 }: ImageGridProps) {
   if (isLoading) {
@@ -28,6 +32,10 @@ export function ImageGrid({
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+
+  if (isError) {
+    return <EmptyState message="Could not load images. Check your connection!" onRetry={onRetry} />;
   }
 
   return (
