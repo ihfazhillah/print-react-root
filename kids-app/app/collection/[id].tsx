@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,6 +8,8 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { isCollection } from '../../src/types/api';
 import { colors } from '../../src/theme';
 import type { CollectionItem, Item } from '../../src/types/api';
+
+const MAX_ITEMS = 48;
 
 export default function CollectionScreen() {
   const { id, item: itemJson } = useLocalSearchParams<{ id: string; item: string }>();
@@ -32,23 +35,33 @@ export default function CollectionScreen() {
     refetch: refetchRelated,
   } = useQuery<Item[], Error>({
     queryKey: ['collection-related', tag],
-    queryFn: () => client.search(tag, 0, 30),
+    queryFn: () => client.search(tag, 0, MAX_ITEMS),
     enabled: tag.length > 0,
-    select: (items) => items.filter((i) => i.url !== item?.url),
+    select: (items) => items.filter((i) => i.url !== item?.url).slice(0, MAX_ITEMS),
   });
 
   if (!item) return null;
 
   const title = item.searches[0]?.text ?? 'Collection';
-  const collectionPrints = item.prints ?? [];
+  const collectionPrints = (item.prints ?? []).slice(0, MAX_ITEMS);
 
-  const handleImagePress = (pressedItem: Item) => {
-    const route = isCollection(pressedItem) ? '/collection/[id]' : '/detail/[id]';
-    router.push({
-      pathname: route,
-      params: { id: String(itemIndex), item: JSON.stringify(pressedItem) },
-    });
-  };
+  const handleImagePress = useCallback(
+    (pressedItem: Item) => {
+      const route = isCollection(pressedItem) ? '/collection/[id]' : '/detail/[id]';
+      router.push({
+        pathname: route,
+        params: { id: String(itemIndex), item: JSON.stringify(pressedItem) },
+      });
+    },
+    [router, itemIndex],
+  );
+
+  const renderCard = useCallback(
+    ({ item: cardItem }: { item: Item }) => (
+      <ImageCard item={cardItem} onPress={() => handleImagePress(cardItem)} />
+    ),
+    [handleImagePress],
+  );
 
   return (
     <>
@@ -61,11 +74,12 @@ export default function CollectionScreen() {
               data={collectionPrints}
               numColumns={3}
               scrollEnabled={false}
-              keyExtractor={(_, i) => `detail-${i}`}
+              keyExtractor={keyExtractor}
               contentContainerStyle={styles.grid}
-              renderItem={({ item: printItem }) => (
-                <ImageCard item={printItem} onPress={() => handleImagePress(printItem)} />
-              )}
+              renderItem={renderCard}
+              removeClippedSubviews
+              initialNumToRender={9}
+              maxToRenderPerBatch={9}
             />
           ) : (
             <EmptyState message="No images in this collection" />
@@ -85,11 +99,12 @@ export default function CollectionScreen() {
               data={related}
               numColumns={3}
               scrollEnabled={false}
-              keyExtractor={(_, i) => `related-${i}`}
+              keyExtractor={keyExtractor}
               contentContainerStyle={styles.grid}
-              renderItem={({ item: relatedItem }) => (
-                <ImageCard item={relatedItem} onPress={() => handleImagePress(relatedItem)} />
-              )}
+              renderItem={renderCard}
+              removeClippedSubviews
+              initialNumToRender={9}
+              maxToRenderPerBatch={9}
             />
           ) : (
             <EmptyState message="No related images" />
@@ -98,6 +113,10 @@ export default function CollectionScreen() {
       </ScrollView>
     </>
   );
+}
+
+function keyExtractor(item: Item) {
+  return item.url;
 }
 
 const styles = StyleSheet.create({

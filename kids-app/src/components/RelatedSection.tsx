@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useRelated } from '../hooks/useRelated';
 import { ImageCard } from './ImageCard';
@@ -12,6 +13,13 @@ interface RelatedSectionProps {
 
 export function RelatedSection({ itemIndex, onItemPress }: RelatedSectionProps) {
   const { data: related, isLoading, isError, refetch } = useRelated(itemIndex);
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Item; index: number }) => (
+      <ImageCard item={item} onPress={() => onItemPress(item, index)} />
+    ),
+    [onItemPress],
+  );
 
   if (isLoading) {
     return <ActivityIndicator style={styles.loader} size="small" />;
@@ -32,14 +40,19 @@ export function RelatedSection({ itemIndex, onItemPress }: RelatedSectionProps) 
         data={related}
         numColumns={3}
         scrollEnabled={false}
-        keyExtractor={(_, i) => String(i)}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.grid}
-        renderItem={({ item, index }) => (
-          <ImageCard item={item} onPress={() => onItemPress(item, index)} />
-        )}
+        renderItem={renderItem}
+        removeClippedSubviews
+        initialNumToRender={9}
+        maxToRenderPerBatch={9}
       />
     </View>
   );
+}
+
+function keyExtractor(item: Item) {
+  return item.url;
 }
 
 const styles = StyleSheet.create({

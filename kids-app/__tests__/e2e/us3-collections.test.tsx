@@ -80,7 +80,7 @@ test('AS-2: collection page shows Detail and Related sections with different con
   });
 
   // Verify search was called with the collection's tag (not /api/related)
-  expect(client.search).toHaveBeenCalledWith('craft-coloring', 0, 30);
+  expect(client.search).toHaveBeenCalledWith('craft-coloring', 0, 48);
 });
 
 test('AS-3: Detail and Related sections have separate headings', () => {

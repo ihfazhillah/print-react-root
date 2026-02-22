@@ -84,7 +84,7 @@ test('shows related items from tag search when loaded', async () => {
   await waitFor(() => {
     expect(getAllByTestId('expo-image').length).toBe(5);
   });
-  expect(client.search).toHaveBeenCalledWith('craft-coloring', 0, 30);
+  expect(client.search).toHaveBeenCalledWith('craft-coloring', 0, 48);
 });
 
 test('shows empty state when no related items', async () => {
