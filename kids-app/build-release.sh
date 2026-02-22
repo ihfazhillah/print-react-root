@@ -20,11 +20,6 @@ if [ -z "${JAVA_HOME:-}" ]; then
   exit 1
 fi
 
-if [ ! -f "$ANDROID_DIR/gradlew" ]; then
-  echo "ERROR: No android/gradlew found. Run 'npx expo prebuild' first."
-  exit 1
-fi
-
 # ─── Version from app.json ───────────────────────────────────────────
 VERSION=$(node -e "console.log(require('$APP_DIR/app.json').expo.version)")
 TAG="v${VERSION}"
@@ -33,13 +28,14 @@ echo "Building $APP_NAME $TAG (arch: $ARCH)"
 # ─── Accept SDK licenses (non-interactive) ───────────────────────────
 yes 2>/dev/null | sdkmanager --licenses > /dev/null 2>&1 || true
 
-# ─── Clean previous build ───────────────────────────────────────────
-echo "Cleaning previous build..."
-cd "$ANDROID_DIR"
-./gradlew clean -q
+# ─── Regenerate native project ───────────────────────────────────────
+echo "Regenerating android/ with expo prebuild..."
+cd "$APP_DIR"
+npx expo prebuild --clean --platform android --no-install
 
 # ─── Build release APK ──────────────────────────────────────────────
 echo "Building release APK..."
+cd "$APP_DIR/android"
 ./gradlew assembleRelease -PreactNativeArchitectures="$ARCH" --no-daemon
 
 if [ ! -f "$APK_PATH" ]; then
