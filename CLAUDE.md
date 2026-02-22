@@ -22,7 +22,9 @@ kids-app/                 # Expo managed project (Android-only)
 
 ```bash
 cd kids-app
-npm test && npm run lint      # Test + lint
+npm test && npm run lint      # All tests + lint
+npm run test:e2e              # E2E user story tests only
+npm run test:unit             # Unit tests only
 npx expo start --clear        # Dev server (clear Metro cache)
 ```
 

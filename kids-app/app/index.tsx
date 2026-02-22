@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { SearchBar } from '../src/components/SearchBar';
 import { ImageGrid } from '../src/components/ImageGrid';
 import { useItems } from '../src/hooks/useItems';
@@ -30,6 +30,20 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push('/settings')}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              style={styles.gearButton}
+            >
+              <Text style={styles.gearIcon}>&#x2699;</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <StatusBar style="auto" />
       <SearchBar onSearch={setSearchQuery} />
       <ImageGrid
@@ -49,5 +63,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  gearButton: {
+    padding: 8,
+  },
+  gearIcon: {
+    fontSize: 24,
   },
 });

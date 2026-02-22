@@ -110,8 +110,14 @@ kids-app/
 ## Testing
 
 ```bash
-# Run all tests
+# Run all tests (unit + E2E)
 npm test
+
+# Run only E2E tests (user story validation)
+npm run test:e2e
+
+# Run only unit tests (hooks, components)
+npm run test:unit
 
 # Run tests in watch mode
 npm test -- --watch
@@ -121,6 +127,13 @@ npm test -- __tests__/hooks/useItems.test.ts
 ```
 
 Tests mock all API calls — no running backend required for testing.
+
+### E2E Tests (`__tests__/e2e/`)
+
+Each user story has a mandatory E2E test file that validates acceptance
+scenarios by testing user-visible behavior. A coverage guard ensures
+all user stories are covered. See `coverage-guard.test.ts` for the
+required mapping.
 
 ## Tech Stack Summary
 

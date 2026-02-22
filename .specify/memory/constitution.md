@@ -1,11 +1,16 @@
 <!-- Sync Impact Report
-  Version change: 1.0.0 → 1.1.0
+  Version change: 1.1.0 → 1.2.0
   Modified principles:
+    - II. Testing Standards → added mandatory E2E test requirement
+      per user story with coverage guard enforcement
+  Previous changes (1.0.0 → 1.1.0):
     - IV. User Experience First → expanded with two user personas
       (admin/developer and children) and per-persona UX rules
   Added sections: None
   Removed sections: None
   Modified sections:
+    - Testing Standards: added E2E test rules (user-story-level
+      integration tests, coverage guard, behavior-over-implementation)
     - Project Context: updated with multi-folder architecture
       (fastapi-image-search for backend/admin, mobile app folder
       for children) and two user personas
@@ -64,8 +69,29 @@ are the project's safety net and documentation of expected behavior.
   implementation (e.g., `test_search_returns_matching_items` not
   `test_search_function`).
 
+**E2E / Integration Tests** (mandatory for user-facing features):
+
+- Every user story MUST have a corresponding E2E test file in
+  `__tests__/e2e/` that validates the acceptance scenarios from the
+  spec. These tests are the **source of truth** for feature correctness.
+- E2E tests MUST test **user-visible behavior** (what text/images
+  appear, what happens on tap), NOT internal component structure.
+  Changing a layout or refactoring components MUST NOT break E2E tests
+  if the user story still works.
+- Each E2E test MUST be prefixed with `AS-N:` matching the acceptance
+  scenario number from the spec (e.g., `AS-1: home screen shows...`).
+- A **coverage guard** test (`coverage-guard.test.ts`) MUST exist that
+  programmatically verifies every user story has its E2E file and
+  required scenario coverage. Deleting an E2E file or scenario causes
+  a test failure.
+- Unit tests remain valuable for isolated logic (hooks, utilities)
+  but MUST NOT be the sole validation of user-facing features.
+
 **Rationale**: Real users depend on this project working correctly.
-Tests catch regressions before users do.
+Unit tests coupled to implementation details break on refactors even
+when features still work. E2E tests tied to user stories catch real
+regressions — a broken feature — without false positives from layout
+changes.
 
 ### III. Bullet-Tracing Development
 
@@ -180,4 +206,4 @@ comply with these principles.
   alignment with these principles. The Constitution Check section in
   plan templates references this file.
 
-**Version**: 1.1.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-21
+**Version**: 1.2.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-22

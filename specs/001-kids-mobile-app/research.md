@@ -335,3 +335,38 @@ Per constitution principle III, development follows this sequence (updated to re
   that tapping this item leads to a group of images, not a single
   image detail page. The ribbon is small enough to not obscure the
   thumbnail but prominent enough to be noticed.
+
+## 19. E2E Testing Strategy — User Story Validation
+
+- **Problem**: Unit tests coupled to internal component structure
+  (e.g., checking for specific components by name, testing prop
+  shapes) break on layout refactors even when the feature still
+  works. This creates false negatives and maintenance burden without
+  catching real regressions.
+- **Decision**: Add mandatory E2E integration tests (`__tests__/e2e/`)
+  that map 1:1 to user stories. Each test file validates the
+  acceptance scenarios from the spec by testing **user-visible
+  behavior** — what text/images appear and what happens on tap.
+  A `coverage-guard.test.ts` meta-test programmatically verifies
+  that every user story has its E2E file and required `AS-N:`
+  scenario coverage.
+- **Structure**:
+  - `us1-browse-search.test.tsx` → US1 acceptance scenarios
+  - `us2-detail-print.test.tsx` → US2 acceptance scenarios
+  - `us3-collections.test.tsx` → US3 acceptance scenarios
+  - `us4-settings.test.tsx` → US4 acceptance scenarios
+  - `coverage-guard.test.ts` → verifies all above exist
+- **Scripts**: `npm run test:e2e` (E2E only), `npm run test:unit`
+  (unit only), `npm test` (everything)
+- **Rationale**: E2E tests are the source of truth for feature
+  correctness. Refactoring `ImageCard` from a `Pressable` to a
+  `TouchableOpacity` won't break the E2E test — it only cares
+  that tapping an image navigates somewhere. Unit tests remain
+  useful for isolated logic (hooks, utilities) but are no longer
+  the sole validation of user-facing features.
+- **Alternatives considered**:
+  - Detox or Maestro for real device E2E: heavyweight setup, requires
+    build toolchain; overkill for a 4-screen app
+  - Only unit tests: breaks too easily on refactors, doesn't
+    validate user stories end-to-end
+  - Manual testing only: not repeatable, no CI enforcement

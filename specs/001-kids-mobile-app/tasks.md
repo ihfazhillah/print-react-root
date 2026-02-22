@@ -156,14 +156,14 @@ app, verify endpoint persisted.
 
 ### Implementation
 
-- [ ] T039 [US4] Add gear icon to home screen header in `kids-app/app/index.tsx`: add a touchable gear/settings icon in the top area (Stack `headerRight` or custom header component) that navigates to `/settings` — per FR-011
-- [ ] T040 [US4] Implement settings screen in `kids-app/app/settings.tsx`: two `TextInput` fields (IP address, optional port), "Save" button, uses `useServerConfig` to load current values and persist updates; validates IP format before saving (FR-014), shows validation error for invalid IP, uses default port 80 when port is empty; Stack header provides back arrow — per FR-012, FR-013, FR-014, acceptance scenarios 1-5
+- [x] T039 [US4] Add gear icon to home screen header in `kids-app/app/index.tsx`: add a touchable gear/settings icon in the top area (Stack `headerRight` or custom header component) that navigates to `/settings` — per FR-011
+- [x] T040 [US4] Implement settings screen in `kids-app/app/settings.tsx`: two `TextInput` fields (IP address, optional port), "Save" button, uses `useServerConfig` to load current values and persist updates; validates IP format before saving (FR-014), shows validation error for invalid IP, uses default port 80 when port is empty; Stack header provides back arrow — per FR-012, FR-013, FR-014, acceptance scenarios 1-5
 - [ ] T041 [US4] Verify via Expo Go on physical Android device: tap gear icon → settings opens; enter valid IP + port → saves; close and reopen app → settings persist; enter invalid IP → validation message shown
 
 ### Tests
 
-- [ ] T042 [P] [US4] Write tests for `useServerConfig` hook in `kids-app/__tests__/hooks/useServerConfig.test.ts`: loads default from env vars, persists to AsyncStorage, reads persisted value on reload, handles missing AsyncStorage data — mock AsyncStorage
-- [ ] T043 [P] [US4] Write tests for settings screen in `kids-app/__tests__/screens/settings.test.tsx`: renders IP and port inputs, validates IP format, saves valid config, rejects invalid IP — use `renderRouter`
+- [x] T042 [P] [US4] Write tests for `useServerConfig` hook in `kids-app/__tests__/hooks/useServerConfig.test.ts`: loads default from env vars, persists to AsyncStorage, reads persisted value on reload, handles missing AsyncStorage data — mock AsyncStorage
+- [x] T043 [P] [US4] Write tests for settings screen in `kids-app/__tests__/screens/settings.test.tsx`: renders IP and port inputs, validates IP format, saves valid config, rejects invalid IP — use `renderRouter`
 
 **Checkpoint**: All 4 user stories complete. Full app functionality.
 

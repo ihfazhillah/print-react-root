@@ -49,6 +49,8 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="index" options={{ title: 'Browse' }} />
           <Stack.Screen name="detail/[id]" options={{ title: 'Detail' }} />
+          <Stack.Screen name="collection/[id]" options={{ title: 'Collection' }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         </Stack>
       </ApiClientProvider>
     </QueryClientProvider>

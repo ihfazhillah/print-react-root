@@ -285,6 +285,7 @@ go to the new endpoint.
 
 - Q: How should collection items be differentiated from prints on the home grid? → A: Add a visual ribbon/badge (e.g., "Collection" label) on collection thumbnails so the child knows it leads to a collection page, not a detail page
 - Q: Should the collection page "Related" section show the same items as the "Detail" section? → A: No — the "Related" section must show different content. Use tag-based search to find other items sharing the same tags, not the collection's own prints (which are already in the Detail section)
+- Q: Should tests be tightly coupled to component implementation? → A: No — every user story MUST have an E2E integration test that validates acceptance scenarios by testing user-visible behavior (text, images, navigation), not internal component structure. A coverage guard test enforces that E2E files exist for all user stories. Unit tests remain for isolated logic but are not the sole validation of features.
 
 ## Success Criteria *(mandatory)*
 
