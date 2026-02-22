@@ -299,3 +299,39 @@ Per constitution principle III, development follows this sequence (updated to re
     managed workflow
   - Downloading certs and bundling in the app: fragile, certs rotate
   - Ignoring the issue: images don't load, app is unusable
+
+## 17. Collection "Related" Section — Tag Search vs /api/related
+
+- **Problem**: The backend's `/api/related/{item_index}` for
+  collections returns `item.prints[]` — the collection's own nested
+  prints. The collection screen's "Detail" section already displays
+  these same prints, so using `/api/related` for the "Related"
+  section would show duplicate content.
+- **Decision**: The collection screen's "Related" section uses
+  `/api/search?q={tag}` with the collection's first tag to find
+  other items sharing the same tags. The collection itself is
+  filtered out of the results client-side (by `url` comparison).
+- **Rationale**: This gives the child genuinely different content
+  to explore in the "Related" section — other prints and
+  collections that share topics with the current collection.
+  No backend changes required.
+- **Alternatives considered**:
+  - Modifying the backend `/api/related` to return tag-matched
+    items for collections: would change existing API behavior and
+    may break other consumers
+  - Using multiple tags: would narrow results too much; first tag
+    provides the broadest relevant match
+
+## 18. Collection Visual Differentiation on Home Grid
+
+- **Problem**: On the home grid, collection items and individual
+  prints look identical. A child tapping a collection expects a
+  single image detail page but gets a different experience.
+- **Decision**: Add a purple "COLLECTION" ribbon at the bottom of
+  collection thumbnails on the home grid via the `ImageCard`
+  component. Uses `isCollection()` type guard to conditionally
+  render.
+- **Rationale**: Visual distinction helps the child understand
+  that tapping this item leads to a group of images, not a single
+  image detail page. The ribbon is small enough to not obscure the
+  thumbnail but prominent enough to be noticed.

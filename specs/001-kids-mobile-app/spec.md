@@ -107,15 +107,20 @@ the individual detail page.
 
 **Acceptance Scenarios**:
 
-1. **Given** the home screen grid, **When** a child taps on a
+1. **Given** the home screen grid, **When** a child sees a
+   collection item, **Then** it is visually distinguished from
+   individual prints (e.g., a ribbon or badge label) so the child
+   knows it leads to a collection page rather than a detail page.
+2. **Given** the home screen grid, **When** a child taps on a
    collection item, **Then** the app navigates to the collection
    page showing a "Detail" section with all images in the
-   collection and a "Related" section with tag-matched images.
-2. **Given** the collection page, **When** the child looks at the
+   collection and a "Related" section with tag-matched images
+   (different items from those in the Detail section).
+3. **Given** the collection page, **When** the child looks at the
    screen, **Then** the "Detail" (collection images) and "Related"
    sections are visually differentiated (e.g., separate headings,
    dividers, or background colors).
-3. **Given** the collection page, **When** the child taps an
+4. **Given** the collection page, **When** the child taps an
    individual image from either section, **Then** the app navigates
    to the individual image detail page (US2 flow).
 
@@ -197,9 +202,14 @@ go to the new endpoint.
 - **FR-005**: Tapping an individual image MUST navigate to a detail
   page with "Detail" (image + tags) and "Related" (tag-matched
   images) sections.
+- **FR-005a**: Collection items on the home grid MUST be visually
+  distinguished from individual prints (e.g., a ribbon or badge)
+  so the child can tell that tapping leads to a collection page.
 - **FR-006**: Tapping a collection MUST navigate to a collection page
   with "Detail" (collection images) and "Related" (tag-matched
-  images) sections, visually differentiated.
+  images) sections, visually differentiated. The "Related" section
+  MUST show different items from the "Detail" section (items
+  sharing the same tags, not the collection's own prints).
 - **FR-007**: From a collection page, tapping any individual image
   MUST navigate to the individual image detail page.
 - **FR-008**: The detail page MUST include a "Print" button that
@@ -270,6 +280,11 @@ go to the new endpoint.
 - Q: First-launch behavior: default endpoint or setup prompt? → A: Default endpoint defined at build time (Expo env var); app goes straight to home screen
 - Q: How does search trigger — live as-you-type or explicit submit? → A: Search-as-you-type with debounce (300-500ms)
 - Q: How does the child navigate back from detail/collection pages? → A: On-screen back arrow on sub-pages + Android system back both work
+
+### Session 2026-02-22
+
+- Q: How should collection items be differentiated from prints on the home grid? → A: Add a visual ribbon/badge (e.g., "Collection" label) on collection thumbnails so the child knows it leads to a collection page, not a detail page
+- Q: Should the collection page "Related" section show the same items as the "Detail" section? → A: No — the "Related" section must show different content. Use tag-based search to find other items sharing the same tags, not the collection's own prints (which are already in the Detail section)
 
 ## Success Criteria *(mandatory)*
 
