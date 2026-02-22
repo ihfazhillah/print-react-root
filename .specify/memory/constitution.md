@@ -1,20 +1,20 @@
 <!-- Sync Impact Report
-  Version change: 1.1.0 → 1.2.0
+  Version change: 1.2.0 → 1.3.0
   Modified principles:
+    - V. Performance — Measure Before Optimizing → NEW principle
+      encoding FlatList performance learnings: propose-before-implement,
+      batch rendering defaults, View+map() antipattern, item caps,
+      React.memo/useCallback/useMemo standards, stable keyExtractor
+  Previous changes (1.1.0 → 1.2.0):
     - II. Testing Standards → added mandatory E2E test requirement
       per user story with coverage guard enforcement
   Previous changes (1.0.0 → 1.1.0):
     - IV. User Experience First → expanded with two user personas
       (admin/developer and children) and per-persona UX rules
-  Added sections: None
+  Added sections:
+    - V. Performance — Measure Before Optimizing
   Removed sections: None
-  Modified sections:
-    - Testing Standards: added E2E test rules (user-story-level
-      integration tests, coverage guard, behavior-over-implementation)
-    - Project Context: updated with multi-folder architecture
-      (fastapi-image-search for backend/admin, mobile app folder
-      for children) and two user personas
-    - Code Quality: added mobile-app language-agnostic guidance
+  Modified sections: None
   Templates requiring updates:
     - .specify/templates/plan-template.md ✅ no changes needed
     - .specify/templates/spec-template.md ✅ no changes needed
@@ -162,6 +162,37 @@ coloring page and a developer managing the image catalog require
 different UX considerations. Designing for both explicitly prevents
 one audience's needs from being neglected.
 
+### V. Performance — Measure Before Optimizing
+
+Performance changes MUST be proposed with alternatives and approved
+before implementation. Optimizations MUST NOT be applied speculatively.
+
+- Performance issues MUST be reproduced and described before proposing
+  fixes. "It feels slow" is a valid starting point, but the specific
+  symptom (scroll jank, slow page transition, long initial load) MUST
+  be identified.
+- Proposed optimizations MUST be listed with pros/cons for user review
+  before any code is changed. The user chooses the approach.
+- **FlatList batching is the default optimization for list performance.**
+  Use `initialNumToRender`, `maxToRenderPerBatch`, `removeClippedSubviews`,
+  and `windowSize` before considering structural changes.
+- **Never replace FlatList with View + map() for lists > ~10 items.**
+  FlatList's internal batching spreads mount cost across frames; plain
+  map() renders everything in one frame, causing visible freezes.
+- **Nested grids MUST be capped** at a maximum item count (currently
+  48) to prevent unbounded rendering. The cap MUST be divisible by the
+  column count for clean grid rows.
+- `React.memo` on leaf list-item components and `useCallback`/`useMemo`
+  for stable references are standard practice for any scrollable list.
+- `keyExtractor` MUST use a stable, unique identifier (e.g., URL or
+  database ID), never array index.
+
+**Rationale**: A failed optimization (View + map() replacing FlatList)
+taught us that intuitive "simplifications" can make performance worse.
+Requiring user approval before implementing performance changes prevents
+wasted effort and regressions. Batch rendering is the highest-impact,
+lowest-risk optimization for React Native lists.
+
 ## Project Context
 
 - **Project type**: Toy project with real users
@@ -206,4 +237,4 @@ comply with these principles.
   alignment with these principles. The Constitution Check section in
   plan templates references this file.
 
-**Version**: 1.2.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-22
+**Version**: 1.3.0 | **Ratified**: 2026-02-21 | **Last Amended**: 2026-02-22

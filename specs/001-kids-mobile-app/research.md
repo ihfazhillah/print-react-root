@@ -370,3 +370,57 @@ Per constitution principle III, development follows this sequence (updated to re
   - Only unit tests: breaks too easily on refactors, doesn't
     validate user stories end-to-end
   - Manual testing only: not repeatable, no CI enforcement
+
+## 20. FlatList Performance — Scroll & Rendering
+
+- **Problem**: Home grid, detail "Related", and collection screens
+  became sluggish once the dataset grew (2,140 items, 93 collections).
+  Users reported noticeable lag during scroll and page transitions.
+- **Decision**: Three-part optimization:
+  1. **React.memo on ImageCard**: Prevents re-renders of off-screen
+     cards during scroll. `expo-image` with `recyclingKey` already
+     handles image recycling, but `memo` avoids the React reconciliation
+     cost entirely.
+  2. **Stable references via useCallback/useMemo**: `renderItem`,
+     `keyExtractor`, `handleEndReached`, and the flattened `items`
+     array are all memoized to prevent FlatList from re-rendering its
+     entire item set when parent state changes (e.g., search query
+     debounce, new page fetch).
+  3. **Batch rendering + item cap**: All grids use
+     `initialNumToRender={9}` (3 rows) and `maxToRenderPerBatch={9}`
+     to spread mount cost across frames. Nested grids (Related, Detail,
+     Collection) are capped at **48 items** (`MAX_RELATED = 48`,
+     `MAX_ITEMS = 48`) — divisible by 3 for clean grid rows, under the
+     50-item ceiling agreed with the user. The home grid uses
+     `initialNumToRender={12}` and `windowSize={5}` for smoother
+     infinite scroll.
+- **Key learnings**:
+  - **FlatList `scrollEnabled={false}` still benefits from batch
+    props.** Even when a FlatList is nested inside a ScrollView with
+    scrolling disabled, `initialNumToRender` and `maxToRenderPerBatch`
+    control how many items mount per frame. This is critical for
+    preventing the JS thread from blocking during initial render.
+  - **Replacing FlatList with View + map() is WORSE, not better.**
+    Tested and rejected: a plain `View` with `.map()` renders all
+    items in a single frame, causing a visible freeze on large lists.
+    FlatList's internal batching (even with `scrollEnabled={false}`)
+    spreads this work across multiple frames.
+  - **`removeClippedSubviews` helps on Android.** Unmounts off-screen
+    views from the native hierarchy, reducing memory and layout cost.
+  - **`keyExtractor` must use a stable identifier** (`item.url`), not
+    array index. Index-based keys cause unnecessary re-renders when
+    items are prepended or filtered.
+- **Alternatives considered**:
+  - View + map() replacing FlatList: tested, made performance worse
+    (all items mount in one frame)
+  - Smaller thumbnails / resolution reduction: would reduce network
+    and decode cost but hurts visual quality; not needed after batch
+    optimization
+  - expo-image caching hints (`cachePolicy`): would reduce re-decode
+    cost for revisited images but doesn't address mount/render cost;
+    can be added later if needed
+- **Rationale**: Batch rendering is the highest-impact, lowest-risk
+  optimization. It doesn't change the component tree, doesn't require
+  new dependencies, and the 48-item cap is generous enough for
+  browsing while preventing extreme cases. The user explicitly chose
+  this approach over alternatives after reviewing pros/cons.
