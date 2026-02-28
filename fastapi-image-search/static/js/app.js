@@ -96,7 +96,7 @@ function displayItems(items) {
   items.forEach((item, index) => {
     const card = document.createElement("div");
     card.className = "item-card";
-    card.dataset.index = index;
+    card.dataset.itemId = item.id;
     card.dataset.type = item.type || "print";
 
     const img = document.createElement("img");
@@ -124,7 +124,7 @@ function displayItems(items) {
       card.appendChild(badge);
     }
 
-    card.addEventListener("click", () => showRelated(index));
+    card.addEventListener("click", () => showRelated(item.id, index));
     fragment.appendChild(card);
   });
 
@@ -192,15 +192,17 @@ function searchByTag(tag) {
 }
 
 // Show related items
-async function showRelated(index) {
+async function showRelated(itemId, index) {
   const item = displayedItems[index];
   if (!item) return;
 
   showLoading();
   try {
-    // If it's a collection, show its prints
-    if (item.type === "collection" && item.prints) {
-      displayRelated(item.prints);
+    if (item.type === "collection") {
+      // Fetch related prints from API using database id
+      const response = await fetch(`/api/related/${itemId}`);
+      const prints = await response.json();
+      displayRelated(prints);
       modal.classList.add("active");
     }
     // If it's a print, show its image

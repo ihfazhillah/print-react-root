@@ -1,22 +1,48 @@
 import base64
-import json
+import logging
 import os
 import subprocess
 import tempfile
 from collections import OrderedDict
-from pathlib import Path
-from typing import Any, Dict, List
+from contextlib import asynccontextmanager
+from typing import Optional
 
+import aiosqlite
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
+from db import (
+    create_page,
+    delete_page,
+    get_db,
+    get_interactions,
+    get_items,
+    get_page,
+    get_related,
+    get_tags,
+    init_db,
+    record_interaction,
+    search_by_tag,
+    update_page,
+)
 from printer import get_printer_service
 
-app = FastAPI()
+log = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup."""
+    await init_db()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -24,99 +50,42 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Load data
-DATA_FILE = Path("data.json")
-data: List[Dict[str, Any]] = []
-
-
-def load_data():
-    global data
-    if DATA_FILE.exists():
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    else:
-        # Create sample data if file doesn't exist
-        data = create_sample_data()
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
-
-def create_sample_data():
-    return [
-        {
-            "thumbnail": "https://print.krokotak.com/d/p/f/9/5/f952a50a27cc8bdbcae27edab3b091d6_1.t.webp",
-            "url": "https://print.krokotak.com/collection?id=f952a50a27cc8bdbcae27edab3b091d6",
-            "searches": [
-                {
-                    "link": "https://print.krokotak.com/search?q=craft-coloring",
-                    "text": "craft-coloring",
-                },
-                {
-                    "link": "https://print.krokotak.com/search?q=fine-motor",
-                    "text": "fine-motor",
-                },
-                {
-                    "link": "https://print.krokotak.com/search?q=prewriting",
-                    "text": "prewriting",
-                },
-            ],
-            "type": "collection",
-            "prints": [
-                {
-                    "thumbnail": "https://print.krokotak.com/d/p/f/9/5/f952a50a27cc8bdbcae27edab3b091d6_1.t.webp",
-                    "url": "https://print.krokotak.com/print?id=f952a50a27cc8bdbcae27edab3b091d6_1",
-                    "searches": [
-                        {
-                            "link": "https://print.krokotak.com/search?q=craft-coloring",
-                            "text": "craft-coloring",
-                        },
-                        {
-                            "link": "https://print.krokotak.com/search?q=fine-motor",
-                            "text": "fine-motor",
-                        },
-                    ],
-                    "type": "print",
-                },
-                {
-                    "thumbnail": "https://print.krokotak.com/d/p/f/9/5/f952a50a27cc8bdbcae27edab3b091d6_2.t.webp",
-                    "url": "https://print.krokotak.com/print?id=f952a50a27cc8bdbcae27edab3b091d6_2",
-                    "searches": [
-                        {
-                            "link": "https://print.krokotak.com/search?q=craft-coloring",
-                            "text": "craft-coloring",
-                        },
-                        {
-                            "link": "https://print.krokotak.com/search?q=prewriting",
-                            "text": "prewriting",
-                        },
-                    ],
-                    "type": "print",
-                },
-            ],
-        },
-        {
-            "thumbnail": "https://print.krokotak.com/d/p/5/3/f/53ff6109fd331e72f3eafa8238b43c18_1.t.webp",
-            "url": "https://print.krokotak.com/print?id=53ff6109fd331e72f3eafa8238b43c18_1",
-            "searches": [
-                {
-                    "link": "https://print.krokotak.com/search?q=baba-marta",
-                    "text": "baba-marta",
-                },
-                {
-                    "link": "https://print.krokotak.com/search?q=craft-coloring",
-                    "text": "craft-coloring",
-                },
-            ],
-            "type": "print",
-        },
-    ]
-
-
-# Load data on startup
-load_data()
-
 # Initialize printer service from environment config
 printer_service = get_printer_service()
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models for request validation
+# ---------------------------------------------------------------------------
+
+
+class PageCreate(BaseModel):
+    url: str
+    thumbnail: str
+    type: str = "print"
+    source: str = "manual"
+    tags: list[str] = []
+    parent_id: int | None = None
+
+
+class PageUpdate(BaseModel):
+    url: str | None = None
+    thumbnail: str | None = None
+    type: str | None = None
+    source: str | None = None
+    tags: list[str] | None = None
+    parent_id: int | None = None
+
+
+class InteractionCreate(BaseModel):
+    page_id: int
+    interaction_type: str
+    session_id: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Existing endpoints (migrated from in-memory data to DB)
+# ---------------------------------------------------------------------------
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -125,80 +94,175 @@ async def root(request: Request):
 
 
 @app.get("/api/items")
-async def get_items(skip: int = 0, limit: int = 20):
+async def api_get_items(skip: int = 0, limit: int = 20):
     """Get collections and prints with pagination"""
-    return data[skip : skip + limit]
+    try:
+        async with get_db() as db:
+            return await get_items(db, skip, limit)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 
 @app.get("/api/search")
-async def search_items(q: str = "", skip: int = 0, limit: int = 20):
+async def api_search_items(q: str = "", skip: int = 0, limit: int = 20):
     """Search items by tag/text with pagination"""
-    if not q:
-        return data[skip : skip + limit]
-
-    q_lower = q.lower()
-    results = []
-
-    for item in data:
-        # Check if item's searches match
-        item_tags = [s["text"].lower() for s in item.get("searches", [])]
-        if any(q_lower in tag for tag in item_tags):
-            results.append(item)
-            continue
-
-        # For collections, also check prints
-        if item.get("type") == "collection":
-            for print_item in item.get("prints", []):
-                print_tags = [s["text"].lower() for s in print_item.get("searches", [])]
-                if any(q_lower in tag for tag in print_tags):
-                    results.append(item)
-                    break
-
-    return results[skip : skip + limit]
+    try:
+        async with get_db() as db:
+            if not q:
+                return await get_items(db, skip, limit)
+            return await search_by_tag(db, q, skip, limit)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 
-@app.get("/api/related/{item_index}")
-async def get_related(item_index: int):
-    """Get related items based on searches/tags"""
-    if item_index < 0 or item_index >= len(data):
-        return []
+@app.get("/api/related/{item_id}")
+async def api_get_related(
+    item_id: int,
+    session_id: Optional[str] = None,
+):
+    """Get related items based on searches/tags. Optionally records a view interaction."""
+    try:
+        async with get_db() as db:
+            # Record view interaction if session_id is provided (US3)
+            if session_id is not None:
+                try:
+                    await record_interaction(
+                        db,
+                        {
+                            "page_id": item_id,
+                            "interaction_type": "view",
+                            "session_id": session_id,
+                        },
+                    )
+                except Exception:
+                    pass  # Don't fail the request if tracking fails
 
-    item = data[item_index]
-    item_tags = set(s["text"].lower() for s in item.get("searches", []))
-
-    # If it's a collection, return its prints
-    if item.get("type") == "collection":
-        return item.get("prints", [])
-
-    # If it's a print, find related items by tags
-    related = []
-    for i, other_item in enumerate(data):
-        if i == item_index:
-            continue
-
-        other_tags = set(s["text"].lower() for s in other_item.get("searches", []))
-
-        # Check for common tags
-        if item_tags & other_tags:  # Intersection
-            related.append(other_item)
-
-    return related
+            return await get_related(db, item_id)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 
 @app.get("/api/tags")
-async def get_tags(limit: int = 10):
+async def api_get_tags(limit: int = 10):
     """Get unique tags with limit"""
-    tags = set()
-    for item in data:
-        for search in item.get("searches", []):
-            tags.add(search["text"])
+    try:
+        async with get_db() as db:
+            return await get_tags(db, limit)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
-        if item.get("type") == "collection":
-            for print_item in item.get("prints", []):
-                for search in print_item.get("searches", []):
-                    tags.add(search["text"])
 
-    return sorted(list(tags))[:limit]
+# ---------------------------------------------------------------------------
+# CRUD endpoints (US2)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/pages", status_code=201)
+async def api_create_page(body: PageCreate):
+    """Create a new printable page entry."""
+    if body.type not in ("print", "collection"):
+        raise HTTPException(status_code=400, detail="type must be 'print' or 'collection'")
+    try:
+        async with get_db() as db:
+            try:
+                return await create_page(db, body.model_dump())
+            except aiosqlite.IntegrityError:
+                raise HTTPException(status_code=409, detail="URL already exists")
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.put("/api/pages/{page_id}")
+async def api_update_page(page_id: int, body: PageUpdate):
+    """Update an existing printable page entry."""
+    if body.type is not None and body.type not in ("print", "collection"):
+        raise HTTPException(status_code=400, detail="type must be 'print' or 'collection'")
+    try:
+        async with get_db() as db:
+            data = {k: v for k, v in body.model_dump().items() if v is not None}
+            if not data:
+                raise HTTPException(status_code=400, detail="No fields to update")
+            try:
+                result = await update_page(db, page_id, data)
+            except aiosqlite.IntegrityError:
+                raise HTTPException(status_code=409, detail="URL already exists")
+            if result is None:
+                raise HTTPException(status_code=404, detail="Page not found")
+            return result
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.delete("/api/pages/{page_id}", status_code=204)
+async def api_delete_page(page_id: int):
+    """Remove a printable page entry."""
+    try:
+        async with get_db() as db:
+            deleted = await delete_page(db, page_id)
+            if not deleted:
+                raise HTTPException(status_code=404, detail="Page not found")
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Interaction endpoints (US3)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/interactions", status_code=201)
+async def api_create_interaction(body: InteractionCreate):
+    """Record a child's interaction with a printable page."""
+    if body.interaction_type not in ("select", "print"):
+        raise HTTPException(
+            status_code=400,
+            detail="interaction_type must be 'select' or 'print'",
+        )
+    try:
+        async with get_db() as db:
+            # Verify page exists
+            page = await get_page(db, body.page_id)
+            if page is None:
+                raise HTTPException(status_code=400, detail="page_id does not exist")
+            return await record_interaction(db, body.model_dump())
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.get("/api/interactions")
+async def api_get_interactions(
+    session_id: Optional[str] = None,
+    page_id: Optional[int] = None,
+    interaction_type: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+):
+    """Query interaction history."""
+    try:
+        async with get_db() as db:
+            return await get_interactions(
+                db,
+                session_id=session_id,
+                page_id=page_id,
+                interaction_type=interaction_type,
+                skip=skip,
+                limit=limit,
+            )
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Image proxy & printing (unchanged)
+# ---------------------------------------------------------------------------
 
 
 async def fetch_krokotak_page(url: str) -> str:
@@ -227,30 +291,25 @@ async def fetch_krokotak_page(url: str) -> str:
     return img_src
 
 
-
 def convert_to_png(image_bytes: bytes) -> bytes:
     """Convert webp image bytes to PNG using ImageMagick"""
-    # Save to temp file
     with tempfile.NamedTemporaryFile(suffix=".webp", delete=False) as temp_file:
         temp_file.write(image_bytes)
         temp_path = temp_file.name
 
-    # Convert to PNG using ImageMagick convert
     png_path = temp_path.replace(".webp", ".png")
     subprocess.run(["convert", temp_path, png_path], check=True)
 
-    # Read converted image
     with open(png_path, "rb") as f:
         png_bytes = f.read()
 
-    # Clean up temp files
     os.unlink(temp_path)
     os.unlink(png_path)
 
     return png_bytes
 
 
-_image_cache: OrderedDict[str, tuple] = OrderedDict()  # url -> (content_type, bytes)
+_image_cache: OrderedDict[str, tuple] = OrderedDict()
 _image_cache_bytes = 0
 IMAGE_CACHE_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
 
@@ -271,7 +330,6 @@ async def proxy_image(url: str):
             content_type = response.headers.get("content-type", "image/webp")
             size = len(response.content)
 
-            # Evict oldest entries until there's room
             while _image_cache and _image_cache_bytes + size > IMAGE_CACHE_MAX_BYTES:
                 _, (_, evicted) = _image_cache.popitem(last=False)
                 _image_cache_bytes -= len(evicted)
@@ -288,20 +346,15 @@ async def proxy_image(url: str):
 async def get_print_image(url: str):
     """Get print image by scraping krokotak _print page and send to printer"""
     try:
-        # Fetch krokotak page and get base64 image
         img_src = await fetch_krokotak_page(url)
 
-        # Decode base64
         header, base64_data = img_src.split(",", 1)
         image_bytes = base64.b64decode(base64_data)
 
-        # Convert to PNG
         png_bytes = convert_to_png(image_bytes)
 
-        # Send to printer via configured service
         result = await printer_service.print_image(png_bytes)
 
-        # Return success message
         return {"status": result.status, "message": result.message}
 
     except Exception as e:
