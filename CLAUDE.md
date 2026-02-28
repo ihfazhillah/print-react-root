@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-21
 ## Active Technologies
 - Python 3.10+ + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); no new pip dependencies needed (002-pluggable-printer)
 - N/A (file-based `data.json`, configuration via environment variables) (002-pluggable-printer)
+- Python 3.10+ (existing) + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); aiosqlite 0.22.1 (new) (003-database-layer)
+- SQLite (file-based, co-located with backend) (003-database-layer)
 
 - TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8 (001-kids-mobile-app)
 
@@ -56,6 +58,7 @@ respected in future dependency changes:
    Babel config or installing Babel plugins.
 
 ## Recent Changes
+- 003-database-layer: Added Python 3.10+ (existing) + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); aiosqlite 0.22.1 (new)
 - 002-pluggable-printer: Added Python 3.10+ + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); no new pip dependencies needed
 
 - 001-kids-mobile-app: Added TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8
