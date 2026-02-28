@@ -339,8 +339,243 @@ function setupEventListeners() {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.classList.contains("active")) {
-      closeModal();
+    if (e.key === "Escape") {
+      if (adminModal.classList.contains("active")) {
+        closeAdminModal();
+      } else if (modal.classList.contains("active")) {
+        closeModal();
+      }
     }
   });
+
+  // Tab toggle
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
+  // Admin event listeners
+  setupAdminListeners();
+}
+
+// ---------------------------------------------------------------------------
+// Admin UI
+// ---------------------------------------------------------------------------
+
+const adminModal = document.getElementById("adminModal");
+const adminForm = document.getElementById("adminForm");
+const adminTableBody = document.getElementById("adminTableBody");
+const adminPagination = document.getElementById("adminPagination");
+let adminPage = 0;
+const ADMIN_PAGE_SIZE = 20;
+
+function switchTab(tab) {
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add("active");
+
+  const searchView = document.getElementById("searchView");
+  const searchHeader = document.getElementById("searchHeader");
+  const adminView = document.getElementById("adminView");
+
+  if (tab === "admin") {
+    searchView.style.display = "none";
+    searchHeader.style.display = "none";
+    adminView.style.display = "block";
+    loadAdminTable();
+  } else {
+    searchView.style.display = "block";
+    searchHeader.style.display = "block";
+    adminView.style.display = "none";
+  }
+}
+
+async function loadAdminTable() {
+  try {
+    const response = await fetch(
+      `/api/items?skip=${adminPage * ADMIN_PAGE_SIZE}&limit=${ADMIN_PAGE_SIZE}`,
+    );
+    const items = await response.json();
+    renderAdminTable(items);
+    renderAdminPagination();
+  } catch (error) {
+    console.error("Error loading admin table:", error);
+    showToast("Error loading pages", true);
+  }
+}
+
+function renderAdminTable(items) {
+  if (!adminTableBody) return;
+  adminTableBody.innerHTML = "";
+
+  items.forEach((item) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><img src="${item.thumbnail}" class="admin-thumb" alt=""></td>
+      <td class="admin-url">${item.url}</td>
+      <td>${item.type}</td>
+      <td>${item.source || ""}</td>
+      <td>${item.searches.map((s) => s.text).join(", ")}</td>
+      <td class="admin-actions">
+        <button class="admin-edit-btn" data-id="${item.id}">Edit</button>
+        <button class="admin-delete-btn" data-id="${item.id}">Delete</button>
+      </td>
+    `;
+
+    tr.querySelector(".admin-edit-btn").addEventListener("click", () =>
+      openEditModal(item),
+    );
+    tr.querySelector(".admin-delete-btn").addEventListener("click", () =>
+      confirmDelete(item.id),
+    );
+
+    adminTableBody.appendChild(tr);
+  });
+}
+
+function renderAdminPagination() {
+  if (!adminPagination) return;
+  adminPagination.innerHTML = "";
+
+  if (adminPage > 0) {
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "admin-page-btn";
+    prevBtn.textContent = "Prev";
+    prevBtn.addEventListener("click", () => {
+      adminPage--;
+      loadAdminTable();
+    });
+    adminPagination.appendChild(prevBtn);
+  }
+
+  const pageLabel = document.createElement("span");
+  pageLabel.className = "admin-page-label";
+  pageLabel.textContent = `Page ${adminPage + 1}`;
+  adminPagination.appendChild(pageLabel);
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "admin-page-btn";
+  nextBtn.textContent = "Next";
+  nextBtn.addEventListener("click", () => {
+    adminPage++;
+    loadAdminTable();
+  });
+  adminPagination.appendChild(nextBtn);
+}
+
+function setupAdminListeners() {
+  const addBtn = document.getElementById("addPageBtn");
+  if (addBtn) addBtn.addEventListener("click", openAddModal);
+
+  const closeBtn = document.getElementById("adminModalClose");
+  if (closeBtn) closeBtn.addEventListener("click", closeAdminModal);
+
+  const cancelBtn = document.getElementById("adminCancelBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeAdminModal);
+
+  if (adminModal) {
+    adminModal.addEventListener("click", (e) => {
+      if (e.target === adminModal) closeAdminModal();
+    });
+  }
+
+  if (adminForm) {
+    adminForm.addEventListener("submit", handleAdminSubmit);
+  }
+}
+
+function openAddModal() {
+  document.getElementById("adminModalTitle").textContent = "Add New Page";
+  document.getElementById("editPageId").value = "";
+  adminForm.reset();
+  document.getElementById("formSource").value = "manual";
+  adminModal.classList.add("active");
+}
+
+function openEditModal(item) {
+  document.getElementById("adminModalTitle").textContent = "Edit Page";
+  document.getElementById("editPageId").value = item.id;
+  document.getElementById("formUrl").value = item.url;
+  document.getElementById("formThumbnail").value = item.thumbnail;
+  document.getElementById("formType").value = item.type;
+  document.getElementById("formSource").value = item.source || "manual";
+  document.getElementById("formTags").value = item.searches
+    .map((s) => s.text)
+    .join(", ");
+  adminModal.classList.add("active");
+}
+
+function closeAdminModal() {
+  adminModal.classList.remove("active");
+  adminForm.reset();
+}
+
+async function handleAdminSubmit(e) {
+  e.preventDefault();
+  const pageId = document.getElementById("editPageId").value;
+  const tagsRaw = document.getElementById("formTags").value;
+  const tags = tagsRaw
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const data = {
+    url: document.getElementById("formUrl").value,
+    thumbnail: document.getElementById("formThumbnail").value,
+    type: document.getElementById("formType").value,
+    source: document.getElementById("formSource").value,
+    tags,
+  };
+
+  try {
+    let response;
+    if (pageId) {
+      response = await fetch(`/api/pages/${pageId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    } else {
+      response = await fetch("/api/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    }
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || "Request failed");
+    }
+
+    showToast(pageId ? "Page updated" : "Page created");
+    closeAdminModal();
+    loadAdminTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+async function confirmDelete(pageId) {
+  if (!confirm("Are you sure you want to delete this page?")) return;
+
+  try {
+    const response = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    if (!response.ok && response.status !== 204) {
+      const err = await response.json();
+      throw new Error(err.detail || "Delete failed");
+    }
+    showToast("Page deleted");
+    loadAdminTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+function showToast(message, isError = false) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = isError ? "toast toast-error toast-show" : "toast toast-show";
+  setTimeout(() => {
+    toast.className = "toast";
+  }, 3000);
 }

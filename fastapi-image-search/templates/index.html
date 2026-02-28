@@ -10,15 +10,43 @@
     <div class="container">
         <header>
             <h1>🎨 Fun Image Search</h1>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for something fun...">
-                <button id="searchBtn">🔍</button>
+            <div class="tab-toggle">
+                <button class="tab-btn active" data-tab="search">Search</button>
+                <button class="tab-btn" data-tab="admin">Admin</button>
             </div>
-            <div class="tags-container" id="tagsContainer"></div>
+            <div id="searchHeader">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search for something fun...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+                <div class="tags-container" id="tagsContainer"></div>
+            </div>
         </header>
 
         <main>
-            <div class="images-grid" id="imagesGrid"></div>
+            <div id="searchView">
+                <div class="images-grid" id="imagesGrid"></div>
+            </div>
+
+            <div id="adminView" style="display:none">
+                <div class="admin-toolbar">
+                    <button id="addPageBtn" class="admin-add-btn">+ Add New Page</button>
+                </div>
+                <table class="admin-table" id="adminTable">
+                    <thead>
+                        <tr>
+                            <th>Thumb</th>
+                            <th>URL</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Tags</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody"></tbody>
+                </table>
+                <div class="admin-pagination" id="adminPagination"></div>
+            </div>
         </main>
 
         <div class="modal" id="modal">
@@ -29,6 +57,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Admin Add/Edit Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content admin-modal-content">
+            <span class="close" id="adminModalClose">&times;</span>
+            <h2 id="adminModalTitle">Add New Page</h2>
+            <form id="adminForm">
+                <input type="hidden" id="editPageId">
+                <label>URL<input type="text" id="formUrl" required></label>
+                <label>Thumbnail URL<input type="text" id="formThumbnail" required></label>
+                <div class="form-row">
+                    <label>Type
+                        <select id="formType">
+                            <option value="print">Print</option>
+                            <option value="collection">Collection</option>
+                        </select>
+                    </label>
+                    <label>Source<input type="text" id="formSource" value="manual"></label>
+                </div>
+                <label>Tags (comma-separated)<input type="text" id="formTags" placeholder="animals, crafts"></label>
+                <div class="form-actions">
+                    <button type="submit" class="admin-save-btn">Save</button>
+                    <button type="button" class="admin-cancel-btn" id="adminCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
 
     <script src="/static/js/app.js"></script>
 </body>

@@ -271,6 +271,211 @@ h1 {
     cursor: pointer;
 }
 
+/* Tab toggle */
+.tab-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.tab-btn {
+    padding: 8px 20px;
+    border: 2px solid white;
+    background: transparent;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #667eea;
+}
+
+/* Admin table */
+.admin-toolbar {
+    margin-bottom: 15px;
+    text-align: right;
+}
+
+.admin-add-btn {
+    padding: 10px 20px;
+    background: #4ecdc4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.admin-table th {
+    background: #764ba2;
+    color: white;
+    padding: 10px 8px;
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+.admin-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.admin-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.admin-url {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-actions {
+    white-space: nowrap;
+}
+
+.admin-edit-btn,
+.admin-delete-btn {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-right: 4px;
+}
+
+.admin-edit-btn {
+    background: #667eea;
+    color: white;
+}
+
+.admin-delete-btn {
+    background: #ff6b6b;
+    color: white;
+}
+
+.admin-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.admin-page-btn {
+    padding: 8px 16px;
+    background: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #667eea;
+}
+
+.admin-page-label {
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* Admin modal form */
+.admin-modal-content {
+    max-width: 500px;
+}
+
+.admin-modal-content label {
+    display: block;
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.admin-modal-content input[type="text"],
+.admin-modal-content select {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 4px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row label {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.admin-save-btn {
+    padding: 10px 25px;
+    background: #4ecdc4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.admin-cancel-btn {
+    padding: 10px 25px;
+    background: #ccc;
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    background: #4ecdc4;
+    color: white;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 2000;
+}
+
+.toast-show {
+    opacity: 1;
+}
+
+.toast-error {
+    background: #ff6b6b;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 1.5rem;
