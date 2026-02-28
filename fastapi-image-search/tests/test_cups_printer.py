@@ -25,10 +25,11 @@ class TestCupsPrinterBehavior(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsInstance(result, PrintResult)
         self.assertEqual(result.status, "sent_to_printer")
-        # Verify lp was called with stdin pipe, reading from stdin (-)
+        # Verify lp was called with fit-to-page, reading from stdin (-)
         mock_exec.assert_called_once()
         args = mock_exec.call_args[0]
         self.assertEqual(args[0], "lp")
+        self.assertIn("fit-to-page", args)
         self.assertIn("-", args)
         # Verify image bytes were sent to stdin
         mock_proc.communicate.assert_called_once_with(input=self.IMAGE_BYTES)

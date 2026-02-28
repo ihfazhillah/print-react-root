@@ -10,7 +10,7 @@ class CupsPrinter(PrinterService):
         self.printer_name = printer_name
 
     async def print_image(self, image_bytes: bytes) -> PrintResult:
-        cmd = ["lp"]
+        cmd = ["lp", "-o", "fit-to-page"]
         if self.printer_name:
             cmd += ["-d", self.printer_name]
         cmd.append("-")  # read from stdin
