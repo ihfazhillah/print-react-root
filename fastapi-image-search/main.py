@@ -14,6 +14,8 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from printer import get_printer_service
+
 app = FastAPI()
 
 # Mount static files
@@ -112,6 +114,9 @@ def create_sample_data():
 
 # Load data on startup
 load_data()
+
+# Initialize printer service from environment config
+printer_service = get_printer_service()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -222,18 +227,6 @@ async def fetch_krokotak_page(url: str) -> str:
     return img_src
 
 
-async def send_to_printer(image_bytes: bytes, password: str) -> dict:
-    """Send image to printer server"""
-    print_server_url = "http://192.168.68.254:1234/print"
-    files = {"file": ("print.png", image_bytes, "image/png")}
-    headers = {"x-pass": password}
-
-    async with httpx.AsyncClient(verify=False) as client:
-        response = await client.post(print_server_url, files=files, headers=headers)
-        response.raise_for_status()
-
-    return {"status": "sent_to_printer", "message": "Image sent to printer"}
-
 
 def convert_to_png(image_bytes: bytes) -> bytes:
     """Convert webp image bytes to PNG using ImageMagick"""
@@ -295,14 +288,6 @@ async def proxy_image(url: str):
 async def get_print_image(url: str):
     """Get print image by scraping krokotak _print page and send to printer"""
     try:
-        # Get print password from environment
-        print_password = os.getenv("PRINT_PASSWORD")
-        if not print_password:
-            raise HTTPException(
-                status_code=500,
-                detail="PRINT_PASSWORD environment variable not set",
-            )
-
         # Fetch krokotak page and get base64 image
         img_src = await fetch_krokotak_page(url)
 
@@ -313,11 +298,11 @@ async def get_print_image(url: str):
         # Convert to PNG
         png_bytes = convert_to_png(image_bytes)
 
-        # Send to printer server
-        result = await send_to_printer(png_bytes, print_password)
+        # Send to printer via configured service
+        result = await printer_service.print_image(png_bytes)
 
         # Return success message
-        return result
+        return {"status": result.status, "message": result.message}
 
     except Exception as e:
         print(f"Error fetching print image: {e}")
