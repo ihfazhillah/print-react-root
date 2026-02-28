@@ -476,6 +476,29 @@ h1 {
     background: #ff6b6b;
 }
 
+/* Admin sub-tabs (Pages / Tags) */
+.admin-sub-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.admin-sub-tab {
+    padding: 8px 20px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.admin-sub-tab.active {
+    background: #667eea;
+    color: white;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 1.5rem;

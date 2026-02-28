@@ -196,13 +196,19 @@ class TestAPITags(DBTestCase):
     """Test /api/tags endpoint"""
 
     def test_get_tags_returns_sorted(self):
-        """Tags are returned sorted alphabetically."""
+        """Tags are returned sorted alphabetically as objects."""
         response = self.client.get("/api/tags")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data, sorted(data))
-        self.assertIn("animals", data)
-        self.assertIn("crafts", data)
+        names = [t["name"] for t in data]
+        self.assertEqual(names, sorted(names))
+        self.assertIn("animals", names)
+        self.assertIn("crafts", names)
+        # Each tag object has expected fields
+        for tag in data:
+            self.assertIn("id", tag)
+            self.assertIn("name", tag)
+            self.assertIn("id_translation", tag)
 
     def test_get_tags_with_limit(self):
         """Limit parameter works."""

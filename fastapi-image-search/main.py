@@ -17,8 +17,12 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from db import (
+    bulk_translate_tags,
     create_page,
+    create_tag,
     delete_page,
+    delete_tag,
+    get_all_tags,
     get_db,
     get_interactions,
     get_items,
@@ -29,6 +33,7 @@ from db import (
     record_interaction,
     search_by_tag,
     update_page,
+    update_tag,
 )
 from printer import get_printer_service
 
@@ -75,6 +80,16 @@ class PageUpdate(BaseModel):
     source: str | None = None
     tags: list[str] | None = None
     parent_id: int | None = None
+
+
+class TagCreate(BaseModel):
+    name: str
+    id_translation: str = ""
+
+
+class TagUpdate(BaseModel):
+    name: str | None = None
+    id_translation: str | None = None
 
 
 class InteractionCreate(BaseModel):
@@ -153,7 +168,84 @@ async def api_get_tags(limit: int = 10):
 
 
 # ---------------------------------------------------------------------------
-# CRUD endpoints (US2)
+# Tag CRUD endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/tags/all")
+async def api_get_all_tags(skip: int = 0, limit: int = 50):
+    """List all tags with Indonesian translations, paginated."""
+    try:
+        async with get_db() as db:
+            return await get_all_tags(db, skip, limit)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.post("/api/tags", status_code=201)
+async def api_create_tag(body: TagCreate):
+    """Create a new tag."""
+    if not body.name.strip():
+        raise HTTPException(status_code=400, detail="Tag name must not be empty")
+    try:
+        async with get_db() as db:
+            try:
+                return await create_tag(db, body.model_dump())
+            except aiosqlite.IntegrityError:
+                raise HTTPException(status_code=409, detail="Tag name already exists")
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.put("/api/tags/{tag_id}")
+async def api_update_tag(tag_id: int, body: TagUpdate):
+    """Update an existing tag."""
+    try:
+        async with get_db() as db:
+            data = {k: v for k, v in body.model_dump().items() if v is not None}
+            if not data:
+                raise HTTPException(status_code=400, detail="No fields to update")
+            try:
+                result = await update_tag(db, tag_id, data)
+            except aiosqlite.IntegrityError:
+                raise HTTPException(status_code=409, detail="Tag name already exists")
+            if result is None:
+                raise HTTPException(status_code=404, detail="Tag not found")
+            return result
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.delete("/api/tags/{tag_id}", status_code=204)
+async def api_delete_tag(tag_id: int):
+    """Delete a tag and its page associations."""
+    try:
+        async with get_db() as db:
+            deleted = await delete_tag(db, tag_id)
+            if not deleted:
+                raise HTTPException(status_code=404, detail="Tag not found")
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.post("/api/tags/translate")
+async def api_translate_tags():
+    """Bulk translate all tags missing Indonesian translations."""
+    try:
+        async with get_db() as db:
+            return await bulk_translate_tags(db)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Page CRUD endpoints (US2)
 # ---------------------------------------------------------------------------
 
 
