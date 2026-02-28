@@ -61,4 +61,10 @@ respected in future dependency changes:
 - 001-kids-mobile-app: Added TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8
 
 <!-- MANUAL ADDITIONS START -->
+
+## FastAPI Backend (fastapi-image-search/)
+
+- Use `uv` to run commands: `uv run python -m unittest discover -v`
+- Do not add dev dependencies (e.g. pytest) unless explicitly asked — use stdlib `unittest`
+
 <!-- MANUAL ADDITIONS END -->

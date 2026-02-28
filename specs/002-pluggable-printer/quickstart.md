@@ -18,7 +18,7 @@ cd fastapi-image-search
 uv sync
 
 # Run tests
-python -m pytest tests/ test_main.py -v
+uv run python -m unittest discover -v
 ```
 
 ## Environment Variables
@@ -65,11 +65,11 @@ echo "test" | lp -d My_Printer -
 cd fastapi-image-search
 
 # Run all tests
-python -m unittest discover -s . -p "test_*.py" -v
+uv run python -m unittest discover -v
 
 # Run printer-specific tests only
-python -m unittest discover -s tests/ -p "test_*.py" -v
+uv run python -m unittest discover -s tests/ -p "test_*.py" -v
 
 # Run endpoint integration tests only
-python -m unittest test_main -v
+uv run python -m unittest test_main -v
 ```
