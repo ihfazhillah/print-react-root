@@ -67,12 +67,15 @@ async function loadTags() {
   }
 }
 
-// Display tags as buttons
+// Display tags as buttons (tags are objects with {id, name, id_translation})
 function displayTags(tags) {
   if (!tagsContainer) return;
 
   tagsContainer.innerHTML = tags
-    .map((tag) => `<button class="tag-btn" data-tag="${tag}">${tag}</button>`)
+    .map(
+      (tag) =>
+        `<button class="tag-btn" data-tag="${tag.name}">${tag.name}</button>`,
+    )
     .join("");
 
   tagsContainer.querySelectorAll(".tag-btn").forEach((btn) => {
@@ -480,6 +483,8 @@ function setupAdminListeners() {
   if (adminForm) {
     adminForm.addEventListener("submit", handleAdminSubmit);
   }
+
+  setupTagListeners();
 }
 
 function openAddModal() {
@@ -565,6 +570,242 @@ async function confirmDelete(pageId) {
     }
     showToast("Page deleted");
     loadAdminTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tag Admin UI
+// ---------------------------------------------------------------------------
+
+const tagModal = document.getElementById("tagModal");
+const tagForm = document.getElementById("tagForm");
+const tagTableBody = document.getElementById("tagTableBody");
+const tagPagination = document.getElementById("tagPagination");
+let tagPage = 0;
+const TAG_PAGE_SIZE = 50;
+
+function switchAdminTab(subtab) {
+  document
+    .querySelectorAll(".admin-sub-tab")
+    .forEach((b) => b.classList.remove("active"));
+  document
+    .querySelector(`.admin-sub-tab[data-subtab="${subtab}"]`)
+    .classList.add("active");
+
+  const pagesView = document.getElementById("pagesSubView");
+  const tagsView = document.getElementById("tagsSubView");
+
+  if (subtab === "tags") {
+    pagesView.style.display = "none";
+    tagsView.style.display = "block";
+    loadTagTable();
+  } else {
+    pagesView.style.display = "block";
+    tagsView.style.display = "none";
+    loadAdminTable();
+  }
+}
+
+async function loadTagTable() {
+  try {
+    const response = await fetch(
+      `/api/tags/all?skip=${tagPage * TAG_PAGE_SIZE}&limit=${TAG_PAGE_SIZE}`,
+    );
+    const tags = await response.json();
+    renderTagTable(tags);
+    renderTagPagination();
+  } catch (error) {
+    console.error("Error loading tag table:", error);
+    showToast("Error loading tags", true);
+  }
+}
+
+function renderTagTable(tags) {
+  if (!tagTableBody) return;
+  tagTableBody.innerHTML = "";
+
+  tags.forEach((tag) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${tag.name}</td>
+      <td>${tag.id_translation || ""}</td>
+      <td class="admin-actions">
+        <button class="admin-edit-btn" data-id="${tag.id}">Edit</button>
+        <button class="admin-delete-btn" data-id="${tag.id}">Delete</button>
+      </td>
+    `;
+
+    tr.querySelector(".admin-edit-btn").addEventListener("click", () =>
+      openEditTagModal(tag),
+    );
+    tr.querySelector(".admin-delete-btn").addEventListener("click", () =>
+      confirmDeleteTag(tag.id),
+    );
+
+    tagTableBody.appendChild(tr);
+  });
+}
+
+function renderTagPagination() {
+  if (!tagPagination) return;
+  tagPagination.innerHTML = "";
+
+  if (tagPage > 0) {
+    const prevBtn = document.createElement("button");
+    prevBtn.className = "admin-page-btn";
+    prevBtn.textContent = "Prev";
+    prevBtn.addEventListener("click", () => {
+      tagPage--;
+      loadTagTable();
+    });
+    tagPagination.appendChild(prevBtn);
+  }
+
+  const pageLabel = document.createElement("span");
+  pageLabel.className = "admin-page-label";
+  pageLabel.textContent = `Page ${tagPage + 1}`;
+  tagPagination.appendChild(pageLabel);
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "admin-page-btn";
+  nextBtn.textContent = "Next";
+  nextBtn.addEventListener("click", () => {
+    tagPage++;
+    loadTagTable();
+  });
+  tagPagination.appendChild(nextBtn);
+}
+
+async function handleTranslateAll() {
+  const btn = document.getElementById("translateAllBtn");
+  if (!btn) return;
+
+  const originalText = btn.textContent;
+  btn.textContent = "Translating...";
+  btn.disabled = true;
+
+  try {
+    const response = await fetch("/api/tags/translate", { method: "POST" });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || "Translation failed");
+    }
+    const result = await response.json();
+    const msg = `Translated: ${result.translated}, Skipped: ${result.skipped}, Failed: ${result.failed}`;
+    showToast(msg, result.failed > 0);
+    loadTagTable();
+  } catch (error) {
+    showToast(error.message, true);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+function setupTagListeners() {
+  const addBtn = document.getElementById("addTagBtn");
+  if (addBtn) addBtn.addEventListener("click", openAddTagModal);
+
+  const translateBtn = document.getElementById("translateAllBtn");
+  if (translateBtn) {
+    translateBtn.disabled = false;
+    translateBtn.addEventListener("click", handleTranslateAll);
+  }
+
+  const closeBtn = document.getElementById("tagModalClose");
+  if (closeBtn) closeBtn.addEventListener("click", closeTagModal);
+
+  const cancelBtn = document.getElementById("tagCancelBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeTagModal);
+
+  if (tagModal) {
+    tagModal.addEventListener("click", (e) => {
+      if (e.target === tagModal) closeTagModal();
+    });
+  }
+
+  if (tagForm) {
+    tagForm.addEventListener("submit", handleTagSubmit);
+  }
+
+  // Sub-tab switching
+  document.querySelectorAll(".admin-sub-tab").forEach((btn) => {
+    btn.addEventListener("click", () => switchAdminTab(btn.dataset.subtab));
+  });
+}
+
+function openAddTagModal() {
+  document.getElementById("tagModalTitle").textContent = "Add New Tag";
+  document.getElementById("editTagId").value = "";
+  tagForm.reset();
+  tagModal.classList.add("active");
+}
+
+function openEditTagModal(tag) {
+  document.getElementById("tagModalTitle").textContent = "Edit Tag";
+  document.getElementById("editTagId").value = tag.id;
+  document.getElementById("tagFormName").value = tag.name;
+  document.getElementById("tagFormTranslation").value =
+    tag.id_translation || "";
+  tagModal.classList.add("active");
+}
+
+function closeTagModal() {
+  tagModal.classList.remove("active");
+  tagForm.reset();
+}
+
+async function handleTagSubmit(e) {
+  e.preventDefault();
+  const tagId = document.getElementById("editTagId").value;
+
+  const data = {
+    name: document.getElementById("tagFormName").value,
+    id_translation: document.getElementById("tagFormTranslation").value,
+  };
+
+  try {
+    let response;
+    if (tagId) {
+      response = await fetch(`/api/tags/${tagId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    } else {
+      response = await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    }
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || "Request failed");
+    }
+
+    showToast(tagId ? "Tag updated" : "Tag created");
+    closeTagModal();
+    loadTagTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+async function confirmDeleteTag(tagId) {
+  if (!confirm("Are you sure you want to delete this tag?")) return;
+
+  try {
+    const response = await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
+    if (!response.ok && response.status !== 204) {
+      const err = await response.json();
+      throw new Error(err.detail || "Delete failed");
+    }
+    showToast("Tag deleted");
+    loadTagTable();
   } catch (error) {
     showToast(error.message, true);
   }

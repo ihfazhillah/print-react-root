@@ -29,23 +29,50 @@
             </div>
 
             <div id="adminView" style="display:none">
-                <div class="admin-toolbar">
-                    <button id="addPageBtn" class="admin-add-btn">+ Add New Page</button>
+                <div class="admin-sub-tabs">
+                    <button class="admin-sub-tab active" data-subtab="pages">Pages</button>
+                    <button class="admin-sub-tab" data-subtab="tags">Tags</button>
                 </div>
-                <table class="admin-table" id="adminTable">
-                    <thead>
-                        <tr>
-                            <th>Thumb</th>
-                            <th>URL</th>
-                            <th>Type</th>
-                            <th>Source</th>
-                            <th>Tags</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminTableBody"></tbody>
-                </table>
-                <div class="admin-pagination" id="adminPagination"></div>
+
+                <!-- Pages sub-tab -->
+                <div id="pagesSubView">
+                    <div class="admin-toolbar">
+                        <button id="addPageBtn" class="admin-add-btn">+ Add New Page</button>
+                    </div>
+                    <table class="admin-table" id="adminTable">
+                        <thead>
+                            <tr>
+                                <th>Thumb</th>
+                                <th>URL</th>
+                                <th>Type</th>
+                                <th>Source</th>
+                                <th>Tags</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody"></tbody>
+                    </table>
+                    <div class="admin-pagination" id="adminPagination"></div>
+                </div>
+
+                <!-- Tags sub-tab -->
+                <div id="tagsSubView" style="display:none">
+                    <div class="admin-toolbar">
+                        <button id="addTagBtn" class="admin-add-btn">+ Add New Tag</button>
+                        <button id="translateAllBtn" class="admin-add-btn" disabled>Translate All</button>
+                    </div>
+                    <table class="admin-table" id="tagTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Indonesian Translation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tagTableBody"></tbody>
+                    </table>
+                    <div class="admin-pagination" id="tagPagination"></div>
+                </div>
             </div>
         </main>
 
@@ -80,6 +107,23 @@
                 <div class="form-actions">
                     <button type="submit" class="admin-save-btn">Save</button>
                     <button type="button" class="admin-cancel-btn" id="adminCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tag Add/Edit Modal -->
+    <div class="modal" id="tagModal">
+        <div class="modal-content admin-modal-content">
+            <span class="close" id="tagModalClose">&times;</span>
+            <h2 id="tagModalTitle">Add New Tag</h2>
+            <form id="tagForm">
+                <input type="hidden" id="editTagId">
+                <label>Name<input type="text" id="tagFormName" required></label>
+                <label>Indonesian Translation<input type="text" id="tagFormTranslation" placeholder="Leave empty to translate later"></label>
+                <div class="form-actions">
+                    <button type="submit" class="admin-save-btn">Save</button>
+                    <button type="button" class="admin-cancel-btn" id="tagCancelBtn">Cancel</button>
                 </div>
             </form>
         </div>

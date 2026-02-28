@@ -26,7 +26,8 @@ CREATE INDEX IF NOT EXISTS idx_pages_source ON printable_pages(source);
 
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE,
+    id_translation TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS page_tags (
@@ -59,6 +60,16 @@ async def init_db(db_path: str | None = None) -> None:
     async with aiosqlite.connect(path) as db:
         await db.execute("PRAGMA foreign_keys = ON")
         await db.executescript(SCHEMA_SQL)
+        # Migration: add id_translation column to existing tags table
+        try:
+            await db.execute(
+                "ALTER TABLE tags ADD COLUMN id_translation TEXT NOT NULL DEFAULT ''"
+            )
+        except aiosqlite.OperationalError:
+            pass  # Column already exists
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tags_id_translation ON tags(id_translation)"
+        )
         await db.commit()
 
 
@@ -144,18 +155,20 @@ async def search_by_tag(
         WHERE p.parent_id IS NULL
           AND (
             LOWER(t.name) LIKE LOWER(?)
+            OR LOWER(t.id_translation) LIKE LOWER(?)
             OR p.id IN (
               SELECT child.parent_id FROM printable_pages child
               JOIN page_tags cpt ON cpt.page_id = child.id
               JOIN tags ct ON ct.id = cpt.tag_id
               WHERE child.parent_id IS NOT NULL
-                AND LOWER(ct.name) LIKE LOWER(?)
+                AND (LOWER(ct.name) LIKE LOWER(?)
+                     OR LOWER(ct.id_translation) LIKE LOWER(?))
             )
           )
         ORDER BY p.id
         LIMIT ? OFFSET ?
         """,
-        (like_pattern, like_pattern, limit, skip),
+        (like_pattern, like_pattern, like_pattern, like_pattern, limit, skip),
     ) as cursor:
         rows = await cursor.fetchall()
     return [await _build_item_dict(db, r) for r in rows]
@@ -197,13 +210,138 @@ async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, 
         return [await _build_item_dict(db, r) for r in rows]
 
 
-async def get_tags(db: aiosqlite.Connection, limit: int) -> list[str]:
-    """Return sorted unique tag names."""
+async def get_tags(db: aiosqlite.Connection, limit: int) -> list[dict[str, Any]]:
+    """Return sorted unique tags with id and translation."""
     async with db.execute(
-        "SELECT DISTINCT name FROM tags ORDER BY name LIMIT ?", (limit,)
+        "SELECT id, name, id_translation FROM tags ORDER BY name LIMIT ?", (limit,)
     ) as cursor:
         rows = await cursor.fetchall()
-    return [row["name"] for row in rows]
+    return [
+        {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+        for row in rows
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Tag CRUD functions
+# ---------------------------------------------------------------------------
+
+
+async def get_all_tags(
+    db: aiosqlite.Connection, skip: int = 0, limit: int = 50
+) -> list[dict[str, Any]]:
+    """Return paginated tags with id, name, and id_translation."""
+    async with db.execute(
+        "SELECT id, name, id_translation FROM tags ORDER BY name LIMIT ? OFFSET ?",
+        (limit, skip),
+    ) as cursor:
+        rows = await cursor.fetchall()
+    return [
+        {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+        for row in rows
+    ]
+
+
+async def get_tag(db: aiosqlite.Connection, tag_id: int) -> dict[str, Any] | None:
+    """Get a single tag by ID."""
+    async with db.execute(
+        "SELECT id, name, id_translation FROM tags WHERE id = ?", (tag_id,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        return None
+    return {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+
+
+async def create_tag(db: aiosqlite.Connection, data: dict[str, Any]) -> dict[str, Any]:
+    """Insert a new tag. Returns the created tag dict."""
+    cursor = await db.execute(
+        "INSERT INTO tags (name, id_translation) VALUES (?, ?)",
+        (data["name"], data.get("id_translation", "")),
+    )
+    await db.commit()
+    tag_id = cursor.lastrowid
+    return await get_tag(db, tag_id)
+
+
+async def update_tag(
+    db: aiosqlite.Connection, tag_id: int, data: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Update an existing tag. Returns updated tag dict or None if not found."""
+    existing = await get_tag(db, tag_id)
+    if existing is None:
+        return None
+    updates = []
+    params: list[Any] = []
+    for field in ("name", "id_translation"):
+        if field in data:
+            updates.append(f"{field} = ?")
+            params.append(data[field])
+    if updates:
+        params.append(tag_id)
+        await db.execute(
+            f"UPDATE tags SET {', '.join(updates)} WHERE id = ?", params
+        )
+        await db.commit()
+    return await get_tag(db, tag_id)
+
+
+async def delete_tag(db: aiosqlite.Connection, tag_id: int) -> bool:
+    """Delete a tag by ID. CASCADE handles page_tags cleanup. Returns True if deleted."""
+    cursor = await db.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+    await db.commit()
+    return cursor.rowcount > 0
+
+
+async def bulk_translate_tags(db: aiosqlite.Connection) -> dict[str, Any]:
+    """Translate all tags with empty id_translation from English to Indonesian.
+
+    Returns a summary dict with translated, skipped, failed counts and error details.
+    """
+    from deep_translator import GoogleTranslator
+
+    # Fetch untranslated tags
+    async with db.execute(
+        "SELECT id, name FROM tags WHERE id_translation = '' ORDER BY id"
+    ) as cursor:
+        untranslated = await cursor.fetchall()
+
+    # Count already-translated tags
+    async with db.execute(
+        "SELECT COUNT(*) as cnt FROM tags WHERE id_translation != ''"
+    ) as cursor:
+        row = await cursor.fetchone()
+        skipped = row["cnt"]
+
+    if not untranslated:
+        return {"translated": 0, "skipped": skipped, "failed": 0, "errors": []}
+
+    translator = GoogleTranslator(source="en", target="id")
+    translated = 0
+    failed = 0
+    errors: list[dict[str, Any]] = []
+
+    for tag_row in untranslated:
+        try:
+            result = translator.translate(tag_row["name"])
+            await db.execute(
+                "UPDATE tags SET id_translation = ? WHERE id = ?",
+                (result, tag_row["id"]),
+            )
+            translated += 1
+        except Exception as e:
+            failed += 1
+            errors.append(
+                {"tag_id": tag_row["id"], "name": tag_row["name"], "error": str(e)}
+            )
+
+    await db.commit()
+    return {
+        "translated": translated,
+        "skipped": skipped,
+        "failed": failed,
+        "errors": errors,
+    }
 
 
 # ---------------------------------------------------------------------------
