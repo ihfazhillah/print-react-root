@@ -30,6 +30,15 @@ jest.mock('expo-image', () => {
   };
 });
 
+// Mock useActivityTracking so deviceStorage/AsyncStorage are not loaded
+jest.mock('../../src/hooks/useActivityTracking', () => ({
+  useActivityTracking: jest.fn(() => ({
+    trackView: jest.fn(),
+    trackDetail: jest.fn(),
+    trackPrint: jest.fn(),
+  })),
+}));
+
 // Must import after jest.mock calls
 // eslint-disable-next-line import/first
 import DetailScreen from '../../app/detail/[id]';

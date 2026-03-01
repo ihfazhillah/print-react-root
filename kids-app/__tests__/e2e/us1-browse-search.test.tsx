@@ -27,6 +27,15 @@ jest.mock('expo-status-bar', () => ({
   StatusBar: () => null,
 }));
 
+// Mock useActivityTracking so deviceStorage/AsyncStorage are not loaded
+jest.mock('../../src/hooks/useActivityTracking', () => ({
+  useActivityTracking: jest.fn(() => ({
+    trackView: jest.fn(),
+    trackDetail: jest.fn(),
+    trackPrint: jest.fn(),
+  })),
+}));
+
 jest.mock('expo-image', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
