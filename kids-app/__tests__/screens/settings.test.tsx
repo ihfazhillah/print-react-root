@@ -21,6 +21,16 @@ jest.mock('../../src/hooks/useServerConfig', () => ({
   }),
 }));
 
+// Mock useDeviceSettings so deviceStorage/AsyncStorage are not loaded
+jest.mock('../../src/hooks/useDeviceSettings', () => ({
+  useDeviceSettings: jest.fn(() => ({
+    deviceName: 'Test Device',
+    syncStatus: 'idle',
+    syncError: null,
+    saveName: jest.fn(),
+  })),
+}));
+
 // Must import after jest.mock calls
 // eslint-disable-next-line import/first
 import SettingsScreen from '../../app/settings';
