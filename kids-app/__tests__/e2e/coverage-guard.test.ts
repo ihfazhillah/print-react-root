@@ -43,6 +43,21 @@ const REQUIRED_E2E_COVERAGE = [
     file: 'us4-settings.test.tsx',
     scenarios: ['AS-2', 'AS-3', 'AS-5'],
   },
+  {
+    story: 'US5 — Branding (KM Kraft)',
+    file: 'us5-branding.test.tsx',
+    scenarios: ['AS-1', 'AS-2'],
+  },
+  {
+    story: 'US6 — Device Auto-Registration and Rename',
+    file: 'us6-device-tracking.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4', 'AS-5'],
+  },
+  {
+    story: 'US7 — Activity Event Tracking',
+    file: 'us7-activity-tracking.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4', 'AS-5'],
+  },
 ];
 
 describe('E2E coverage guard', () => {

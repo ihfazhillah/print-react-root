@@ -19,9 +19,9 @@
 
 **Purpose**: Prepare shared infrastructure for device tracking feature
 
-- [ ] T001 Add device tables (devices, device_tokens, activity_events) to database schema in fastapi-image-search/db.py
-- [ ] T002 [P] Create TypeScript device types (DeviceSettings, ActivityEventRequest, etc.) in kids-app/src/types/device.ts
-- [ ] T003 [P] Create device storage module (AsyncStorage for token, name, registered state) in kids-app/src/storage/deviceStorage.ts
+- [x] T001 Add device tables (devices, device_tokens, activity_events) to database schema in fastapi-image-search/db.py
+- [x] T002 [P] Create TypeScript device types (DeviceSettings, ActivityEventRequest, etc.) in kids-app/src/types/device.ts
+- [x] T003 [P] Create device storage module (AsyncStorage for token, name, registered state) in kids-app/src/storage/deviceStorage.ts
 
 **Checkpoint**: Database schema extended, shared types and storage layer ready
 
@@ -35,17 +35,17 @@
 
 ### Bug 1: Settings host/port not persisting when navigating away and back
 
-- [ ] T004 Write regression test reproducing settings persistence bug (change host/port, navigate away, return, verify new values shown) in kids-app/__tests__/e2e/us4-settings.test.tsx
-- [ ] T005 Fix useServerConfig hook to properly invalidate cached config when settings are saved in kids-app/src/hooks/useServerConfig.ts
-- [ ] T006 Fix settings.tsx to reload saved values from AsyncStorage on screen focus (not just mount) in kids-app/app/settings.tsx
-- [ ] T007 Run regression test T004 and verify it passes
+- [x] T004 Write regression test reproducing settings persistence bug (change host/port, navigate away, return, verify new values shown) in kids-app/__tests__/e2e/us4-settings.test.tsx
+- [x] T005 Fix useServerConfig hook to properly invalidate cached config when settings are saved in kids-app/src/hooks/useServerConfig.ts
+- [x] T006 Fix settings.tsx to reload saved values from AsyncStorage on screen focus (not just mount) in kids-app/app/settings.tsx
+- [x] T007 Run regression test T004 and verify it passes
 
 ### Bug 2: Image list not updating when endpoint changes (still uses old endpoint, but search works)
 
-- [ ] T008 Write regression test reproducing list endpoint caching bug (change host/port, verify list uses new endpoint, not old one) in kids-app/__tests__/e2e/us4-settings.test.tsx
-- [ ] T009 Fix ApiClientProvider to rebuild API client when server config changes (invalidate React Query cache on config change) in kids-app/src/api/ApiClientProvider.tsx
-- [ ] T010 Fix useItems hook to refetch when base URL changes (ensure query key includes server config) in kids-app/src/hooks/useItems.ts
-- [ ] T011 Run regression test T008 and verify it passes
+- [x] T008 Write regression test reproducing list endpoint caching bug (change host/port, verify list uses new endpoint, not old one) in kids-app/__tests__/e2e/us4-settings.test.tsx
+- [x] T009 Fix ApiClientProvider to rebuild API client when server config changes (invalidate React Query cache on config change) in kids-app/src/api/ApiClientProvider.tsx
+- [x] T010 Fix useItems hook to refetch when base URL changes (ensure query key includes server config) in kids-app/src/hooks/useItems.ts
+- [x] T011 Run regression test T008 and verify it passes
 
 **Checkpoint**: Both settings bugs fixed and regression tests green
 
@@ -59,15 +59,15 @@
 
 ### E2E Tests for Branding
 
-- [ ] T012 [P] [US4] Write E2E test verifying app name displays as "KM Kraft" in kids-app/__tests__/e2e/us5-branding.test.tsx
+- [x] T012 [P] [US4] Write E2E test verifying app name displays as "KM Kraft" in kids-app/__tests__/e2e/us5-branding.test.tsx
 
 ### Implementation for Branding
 
-- [ ] T013 [P] [US4] Update app name to "KM Kraft" in kids-app/app.json (name, slug, scheme fields)
-- [ ] T014 [P] [US4] Create simple leather-themed app icon (SVG or PNG) in kids-app/assets/images/icon.png
-- [ ] T015 [US4] Update app.json to reference new icon and verify branding displays correctly in kids-app/app.json
-- [ ] T016 [US4] Update header title in _layout.tsx to display "KM Kraft" in kids-app/app/_layout.tsx
-- [ ] T017 [US4] Run E2E test T012 and verify it passes
+- [x] T013 [P] [US4] Update app name to "KM Kraft" in kids-app/app.json (name, slug, scheme fields)
+- [x] T014 [P] [US4] Create simple leather-themed app icon (SVG or PNG) in kids-app/assets/images/icon.png
+- [x] T015 [US4] Update app.json to reference new icon and verify branding displays correctly in kids-app/app.json
+- [x] T016 [US4] Update header title in _layout.tsx to display "KM Kraft" in kids-app/app/_layout.tsx
+- [x] T017 [US4] Run E2E test T012 and verify it passes
 
 **Checkpoint**: App rebranded to "KM Kraft" with leather icon, bugs fixed — ready for tracking integration
 
@@ -79,12 +79,12 @@
 
 **⚠️ CRITICAL**: No tracking user story work can begin until this phase is complete
 
-- [ ] T018 Implement device registration endpoint (POST /api/devices/register) accepting initial_name, returning device_id + device_token in fastapi-image-search/main.py
-- [ ] T019 Implement device token validation dependency (validate Authorization: Bearer header against device_tokens table) in fastapi-image-search/main.py
-- [ ] T020 [P] Implement device name update endpoint (PATCH /api/devices/{device_id}/name) with token auth in fastapi-image-search/main.py
-- [ ] T021 [P] Implement activity event recording endpoint (POST /api/devices/{device_id}/events) with token auth in fastapi-image-search/main.py
-- [ ] T022 Write backend unit tests for device registration, token validation, name update, and event recording in fastapi-image-search/test_main.py
-- [ ] T023 [P] Create mobile API client module with register(), updateName(), trackEvent() methods in kids-app/src/api/devices.ts
+- [x] T018 Implement device registration endpoint (POST /api/devices/register) accepting initial_name, returning device_id + device_token in fastapi-image-search/main.py
+- [x] T019 Implement device token validation dependency (validate Authorization: Bearer header against device_tokens table) in fastapi-image-search/main.py
+- [x] T020 [P] Implement device name update endpoint (PATCH /api/devices/{device_id}/name) with token auth in fastapi-image-search/main.py
+- [x] T021 [P] Implement activity event recording endpoint (POST /api/devices/{device_id}/events) with token auth in fastapi-image-search/main.py
+- [x] T022 Write backend unit tests for device registration, token validation, name update, and event recording in fastapi-image-search/test_main.py
+- [x] T023 [P] Create mobile API client module with register(), updateName(), trackEvent() methods in kids-app/src/api/devices.ts
 
 **Checkpoint**: Backend device endpoints ready, mobile API client ready — user story implementation can begin
 
@@ -98,15 +98,15 @@
 
 ### E2E Tests for User Story 1
 
-- [ ] T024 [US1] Write E2E tests for device auto-registration and name persistence (AS-1 through AS-5 from spec) in kids-app/__tests__/e2e/us5-device-tracking.test.tsx
+- [x] T024 [US1] Write E2E tests for device auto-registration and name persistence (AS-1 through AS-5 from spec) in kids-app/__tests__/e2e/us5-device-tracking.test.tsx
 
 ### Implementation for User Story 1
 
-- [ ] T025 [US1] Implement useDeviceRegistration hook (check if registered on mount, auto-register on first successful connection, persist token) in kids-app/src/hooks/useDeviceRegistration.ts
-- [ ] T026 [US1] Implement useDeviceSettings hook (load/save device name from storage, sync name changes to backend) in kids-app/src/hooks/useDeviceSettings.ts
-- [ ] T027 [US1] Add device name field to settings screen (display current name, editable, save button, sync indicator) in kids-app/app/settings.tsx
-- [ ] T028 [US1] Integrate useDeviceRegistration into app root layout (auto-register when ApiClient connects successfully) in kids-app/app/_layout.tsx
-- [ ] T029 [US1] Run E2E tests T024 and verify all pass
+- [x] T025 [US1] Implement useDeviceRegistration hook (check if registered on mount, auto-register on first successful connection, persist token) in kids-app/src/hooks/useDeviceRegistration.ts
+- [x] T026 [US1] Implement useDeviceSettings hook (load/save device name from storage, sync name changes to backend) in kids-app/src/hooks/useDeviceSettings.ts
+- [x] T027 [US1] Add device name field to settings screen (display current name, editable, save button, sync indicator) in kids-app/app/settings.tsx
+- [x] T028 [US1] Integrate useDeviceRegistration into app root layout (auto-register when ApiClient connects successfully) in kids-app/app/_layout.tsx
+- [x] T029 [US1] Run E2E tests T024 and verify all pass
 
 **Checkpoint**: Device auto-registers on first connection, name is editable and persists — US1 fully functional
 
@@ -120,15 +120,15 @@
 
 ### E2E Tests for User Story 2
 
-- [ ] T030 [US2] Write backend integration tests for device token auth (valid token accepted, invalid token rejected, inactive device rejected) in fastapi-image-search/test_main.py
+- [x] T030 [US2] Write backend integration tests for device token auth (valid token accepted, invalid token rejected, inactive device rejected) in fastapi-image-search/test_main.py
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Add token validation to existing endpoints that should require device auth (if applicable) in fastapi-image-search/main.py
-- [ ] T032 [US2] Add admin device list endpoint (GET /api/admin/devices) for dashboard use in fastapi-image-search/main.py
-- [ ] T033 [US2] Add admin device deactivation endpoint (DELETE /api/admin/devices/{device_id}) for dashboard use in fastapi-image-search/main.py
-- [ ] T034 [US2] Write backend tests for admin device management endpoints in fastapi-image-search/test_main.py
-- [ ] T035 [US2] Run all backend tests and verify they pass
+- [x] T031 [US2] Add token validation to existing endpoints that should require device auth (if applicable) in fastapi-image-search/main.py
+- [x] T032 [US2] Add admin device list endpoint (GET /api/admin/devices) for dashboard use in fastapi-image-search/main.py
+- [x] T033 [US2] Add admin device deactivation endpoint (DELETE /api/admin/devices/{device_id}) for dashboard use in fastapi-image-search/main.py
+- [x] T034 [US2] Write backend tests for admin device management endpoints in fastapi-image-search/test_main.py
+- [x] T035 [US2] Run all backend tests and verify they pass
 
 **Checkpoint**: Backend authenticates all device requests, admin can manage devices — US2 fully functional
 
@@ -142,15 +142,15 @@
 
 ### E2E Tests for User Story 3
 
-- [ ] T036 [US3] Write E2E tests for activity event tracking (AS-1 through AS-5: view, detail, print events sent; fire-and-forget on failure; new endpoint used after config change) in kids-app/__tests__/e2e/us5-device-tracking.test.tsx
+- [x] T036 [US3] Write E2E tests for activity event tracking (AS-1 through AS-5: view, detail, print events sent; fire-and-forget on failure; new endpoint used after config change) in kids-app/__tests__/e2e/us5-device-tracking.test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] Implement useActivityTracking hook (trackView, trackDetail, trackPrint — fire-and-forget POST to backend) in kids-app/src/hooks/useActivityTracking.ts
-- [ ] T038 [US3] Integrate trackView into home screen (send event when image list is displayed) in kids-app/app/index.tsx
-- [ ] T039 [US3] Integrate trackDetail into detail screen (send event when image detail page is opened) in kids-app/app/detail/[id].tsx
-- [ ] T040 [US3] Integrate trackPrint into print flow (send event when print button is tapped) in kids-app/app/detail/[id].tsx
-- [ ] T041 [US3] Run E2E tests T036 and verify all pass
+- [x] T037 [US3] Implement useActivityTracking hook (trackView, trackDetail, trackPrint — fire-and-forget POST to backend) in kids-app/src/hooks/useActivityTracking.ts
+- [x] T038 [US3] Integrate trackView into home screen (send event when image list is displayed) in kids-app/app/index.tsx
+- [x] T039 [US3] Integrate trackDetail into detail screen (send event when image detail page is opened) in kids-app/app/detail/[id].tsx
+- [x] T040 [US3] Integrate trackPrint into print flow (send event when print button is tapped) in kids-app/app/detail/[id].tsx
+- [x] T041 [US3] Run E2E tests T036 and verify all pass
 
 **Checkpoint**: Activity events (view/detail/print) tracked and sent to backend — US3 fully functional
 
@@ -160,10 +160,10 @@
 
 **Purpose**: Final validation, cleanup, and cross-story integration
 
-- [ ] T042 Update E2E coverage guard to include new user stories (US5 device-tracking, US5 branding) in kids-app/__tests__/e2e/coverage-guard.test.ts
-- [ ] T043 Run full test suite (backend + mobile) and verify all tests pass
-- [ ] T044 Manual device testing: install app on real Android device, verify auto-registration, name change, activity tracking, branding
-- [ ] T045 Code cleanup: remove dead code, verify linting passes (ruff for Python, ESLint for TypeScript)
+- [x] T042 Update E2E coverage guard to include new user stories (US5 device-tracking, US5 branding) in kids-app/__tests__/e2e/coverage-guard.test.ts
+- [x] T043 Run full test suite (backend + mobile) and verify all tests pass
+- [x] T044 Manual device testing: install app on real Android device, verify auto-registration, name change, activity tracking, branding
+- [x] T045 Code cleanup: remove dead code, verify linting passes (ruff for Python, ESLint for TypeScript)
 
 ---
 
