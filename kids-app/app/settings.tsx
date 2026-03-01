@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useServerConfig } from '../src/hooks/useServerConfig';
 import { useDeviceSettings } from '../src/hooks/useDeviceSettings';
@@ -70,7 +70,11 @@ export default function SettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Settings' }} />
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.sectionTitle}>Device</Text>
 
         <Text style={styles.label}>Device Name</Text>
@@ -139,16 +143,23 @@ export default function SettingsScreen() {
         >
           <Text style={styles.saveButtonText}>Save</Text>
         </Pressable>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  content: {
     padding: 20,
+    paddingBottom: 40,
   },
   sectionTitle: {
     fontSize: 18,

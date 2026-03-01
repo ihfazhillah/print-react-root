@@ -485,6 +485,7 @@ function setupAdminListeners() {
   }
 
   setupTagListeners();
+  setupDeviceListeners();
 }
 
 function openAddModal() {
@@ -596,14 +597,20 @@ function switchAdminTab(subtab) {
 
   const pagesView = document.getElementById("pagesSubView");
   const tagsView = document.getElementById("tagsSubView");
+  const devicesView = document.getElementById("devicesSubView");
+
+  pagesView.style.display = "none";
+  tagsView.style.display = "none";
+  devicesView.style.display = "none";
 
   if (subtab === "tags") {
-    pagesView.style.display = "none";
     tagsView.style.display = "block";
     loadTagTable();
+  } else if (subtab === "devices") {
+    devicesView.style.display = "block";
+    loadDeviceTable();
   } else {
     pagesView.style.display = "block";
-    tagsView.style.display = "none";
     loadAdminTable();
   }
 }
@@ -809,6 +816,139 @@ async function confirmDeleteTag(tagId) {
   } catch (error) {
     showToast(error.message, true);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Devices Admin UI
+// ---------------------------------------------------------------------------
+
+const deviceModal = document.getElementById("deviceModal");
+const deviceForm = document.getElementById("deviceForm");
+const deviceTableBody = document.getElementById("deviceTableBody");
+
+async function loadDeviceTable() {
+  const showInactive = document.getElementById("showInactiveDevices")?.checked;
+  try {
+    const response = await fetch(
+      `/api/admin/devices${showInactive ? "?include_inactive=true" : ""}`,
+    );
+    if (!response.ok) throw new Error("Failed to load devices");
+    const devices = await response.json();
+    renderDeviceTable(devices);
+  } catch (error) {
+    console.error("Error loading devices:", error);
+    showToast("Error loading devices", true);
+  }
+}
+
+function renderDeviceTable(devices) {
+  if (!deviceTableBody) return;
+  deviceTableBody.innerHTML = "";
+
+  if (devices.length === 0) {
+    deviceTableBody.innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:#888">No devices registered</td></tr>';
+    return;
+  }
+
+  devices.forEach((device) => {
+    const registered = device.registered_at
+      ? new Date(device.registered_at).toLocaleString()
+      : "—";
+    const isActive = device.is_active !== false;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${device.device_name || "—"}</td>
+      <td style="font-size:12px;color:#888">${device.device_id}</td>
+      <td style="font-size:12px">${registered}</td>
+      <td><span style="color:${isActive ? "green" : "#aaa"}">${isActive ? "Active" : "Inactive"}</span></td>
+      <td class="admin-actions">
+        ${isActive ? `<button class="admin-edit-btn" data-id="${device.device_id}" data-name="${device.device_name || ""}">Rename</button>` : ""}
+        ${isActive ? `<button class="admin-delete-btn" data-id="${device.device_id}">Deactivate</button>` : ""}
+      </td>
+    `;
+
+    tr.querySelector(".admin-edit-btn")?.addEventListener("click", (e) => {
+      openRenameDeviceModal(
+        e.currentTarget.dataset.id,
+        e.currentTarget.dataset.name,
+      );
+    });
+    tr.querySelector(".admin-delete-btn")?.addEventListener("click", (e) => {
+      confirmDeactivateDevice(e.currentTarget.dataset.id);
+    });
+
+    deviceTableBody.appendChild(tr);
+  });
+}
+
+function openRenameDeviceModal(deviceId, currentName) {
+  document.getElementById("editDeviceId").value = deviceId;
+  document.getElementById("deviceFormName").value = currentName;
+  deviceModal.classList.add("active");
+}
+
+function closeDeviceModal() {
+  deviceModal.classList.remove("active");
+  deviceForm.reset();
+}
+
+async function handleDeviceFormSubmit(e) {
+  e.preventDefault();
+  const deviceId = document.getElementById("editDeviceId").value;
+  const name = document.getElementById("deviceFormName").value.trim();
+
+  try {
+    const response = await fetch(`/api/admin/devices/${deviceId}/name`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || "Rename failed");
+    }
+    showToast("Device renamed");
+    closeDeviceModal();
+    loadDeviceTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+async function confirmDeactivateDevice(deviceId) {
+  if (!confirm("Deactivate this device? It will no longer be able to connect."))
+    return;
+
+  try {
+    const response = await fetch(`/api/admin/devices/${deviceId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok && response.status !== 204) {
+      const err = await response.json();
+      throw new Error(err.detail || "Deactivate failed");
+    }
+    showToast("Device deactivated");
+    loadDeviceTable();
+  } catch (error) {
+    showToast(error.message, true);
+  }
+}
+
+function setupDeviceListeners() {
+  document
+    .getElementById("deviceModalClose")
+    ?.addEventListener("click", closeDeviceModal);
+  document
+    .getElementById("deviceCancelBtn")
+    ?.addEventListener("click", closeDeviceModal);
+  deviceModal?.addEventListener("click", (e) => {
+    if (e.target === deviceModal) closeDeviceModal();
+  });
+  deviceForm?.addEventListener("submit", handleDeviceFormSubmit);
+  document
+    .getElementById("showInactiveDevices")
+    ?.addEventListener("change", loadDeviceTable);
 }
 
 function showToast(message, isError = false) {

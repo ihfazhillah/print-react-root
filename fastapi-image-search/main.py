@@ -541,6 +541,19 @@ async def api_get_all_devices(include_inactive: bool = False):
         return await get_all_devices(db, include_inactive=include_inactive)
 
 
+@app.patch("/api/admin/devices/{device_id}/name")
+async def api_admin_update_device_name(device_id: str, body: DeviceNameUpdate):
+    """Admin endpoint: rename a device without requiring its auth token."""
+    name = body.name.strip()
+    if not name or len(name) > 50:
+        raise HTTPException(status_code=422, detail="name must be 1-50 characters")
+    async with get_db() as db:
+        result = await update_device_name(db, device_id, name)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return result
+
+
 @app.delete("/api/admin/devices/{device_id}", status_code=204)
 async def api_deactivate_device(device_id: str):
     """Admin endpoint: deactivate (soft-delete) a device."""
