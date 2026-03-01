@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "kids-app",
-    "slug": "kids-app",
+    "name": "KM Kraft",
+    "slug": "km-kraft",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "kids-app",
+    "scheme": "km-kraft",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -19,14 +19,14 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kidsapp.printreact"
+      "package": "com.kmkraft.printreact"
     },
     "plugins": [
       "expo-router",
       "./plugins/withNetworkSecurityConfig"
     ],
     "ios": {
-      "bundleIdentifier": "com.kidsapp.printreact"
+      "bundleIdentifier": "com.kmkraft.printreact"
     }
   }
 }
