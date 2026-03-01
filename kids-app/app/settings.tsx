@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useServerConfig } from '../src/hooks/useServerConfig';
@@ -24,6 +24,17 @@ export default function SettingsScreen() {
 
   const { deviceName, syncStatus, syncError, saveName } = useDeviceSettings();
   const [nameInput, setNameInput] = useState('');
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  // y-offset of each field's wrapping View within the ScrollView content
+  const fieldY = useRef<Record<string, number>>({});
+
+  const scrollToField = (field: string) => {
+    const y = fieldY.current[field];
+    if (y !== undefined) {
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true });
+    }
+  };
 
   // Sync name input when stored name loads
   useEffect(() => {
@@ -74,76 +85,90 @@ export default function SettingsScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionTitle}>Device</Text>
-
-        <Text style={styles.label}>Device Name</Text>
-        <TextInput
-          style={styles.input}
-          value={nameInput}
-          onChangeText={setNameInput}
-          placeholder="My Device"
-          autoCapitalize="words"
-          autoCorrect={false}
-          accessibilityLabel="Device name"
-        />
-        {syncStatus === 'syncing' && <Text style={styles.hint}>Saving…</Text>}
-        {syncStatus === 'synced' && <Text style={styles.success}>Name saved!</Text>}
-        {syncStatus === 'error' && syncError && <Text style={styles.error}>{syncError}</Text>}
-
-        <Pressable
-          style={styles.saveButton}
-          onPress={handleSaveName}
-          accessibilityRole="button"
-          accessibilityLabel="Save device name"
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.saveButtonText}>Save Name</Text>
-        </Pressable>
+          <Text style={styles.sectionTitle}>Device</Text>
 
-        <Text style={styles.sectionTitle}>Server</Text>
+          <View onLayout={(e) => { fieldY.current.deviceName = e.nativeEvent.layout.y; }}>
+            <Text style={styles.label}>Device Name</Text>
+            <TextInput
+              style={styles.input}
+              value={nameInput}
+              onChangeText={setNameInput}
+              onFocus={() => scrollToField('deviceName')}
+              placeholder="My Device"
+              autoCapitalize="words"
+              autoCorrect={false}
+              accessibilityLabel="Device name"
+            />
+          </View>
+          {syncStatus === 'syncing' && <Text style={styles.hint}>Saving…</Text>}
+          {syncStatus === 'synced' && <Text style={styles.success}>Name saved!</Text>}
+          {syncStatus === 'error' && syncError && <Text style={styles.error}>{syncError}</Text>}
 
-        <Text style={styles.label}>Server IP Address</Text>
-        <TextInput
-          style={styles.input}
-          value={ip}
-          onChangeText={(text) => {
-            setIp(text);
-            setError('');
-            setSaved(false);
-          }}
-          placeholder="192.168.68.254"
-          keyboardType="numeric"
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Server IP address"
-        />
+          <Pressable
+            style={styles.saveButton}
+            onPress={handleSaveName}
+            accessibilityRole="button"
+            accessibilityLabel="Save device name"
+          >
+            <Text style={styles.saveButtonText}>Save Name</Text>
+          </Pressable>
 
-        <Text style={styles.label}>Port (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={port}
-          onChangeText={(text) => {
-            setPort(text);
-            setError('');
-            setSaved(false);
-          }}
-          placeholder="80"
-          keyboardType="numeric"
-          accessibilityLabel="Server port"
-        />
+          <Text style={styles.sectionTitle}>Server</Text>
 
-        {error !== '' && <Text style={styles.error}>{error}</Text>}
-        {saved && <Text style={styles.success}>Settings saved!</Text>}
+          <View onLayout={(e) => { fieldY.current.ip = e.nativeEvent.layout.y; }}>
+            <Text style={styles.label}>Server IP Address</Text>
+            <TextInput
+              style={styles.input}
+              value={ip}
+              onChangeText={(text) => {
+                setIp(text);
+                setError('');
+                setSaved(false);
+              }}
+              onFocus={() => scrollToField('ip')}
+              placeholder="192.168.68.254"
+              keyboardType="numeric"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Server IP address"
+            />
+          </View>
 
-        <Pressable
-          style={styles.saveButton}
-          onPress={handleSave}
-          accessibilityRole="button"
-          accessibilityLabel="Save settings"
-        >
-          <Text style={styles.saveButtonText}>Save</Text>
-        </Pressable>
-      </ScrollView>
+          <View onLayout={(e) => { fieldY.current.port = e.nativeEvent.layout.y; }}>
+            <Text style={styles.label}>Port (optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={port}
+              onChangeText={(text) => {
+                setPort(text);
+                setError('');
+                setSaved(false);
+              }}
+              onFocus={() => scrollToField('port')}
+              placeholder="80"
+              keyboardType="numeric"
+              accessibilityLabel="Server port"
+            />
+          </View>
+
+          {error !== '' && <Text style={styles.error}>{error}</Text>}
+          {saved && <Text style={styles.success}>Settings saved!</Text>}
+
+          <Pressable
+            style={styles.saveButton}
+            onPress={handleSave}
+            accessibilityRole="button"
+            accessibilityLabel="Save settings"
+          >
+            <Text style={styles.saveButtonText}>Save</Text>
+          </Pressable>
+        </ScrollView>
       </KeyboardAvoidingView>
     </>
   );
