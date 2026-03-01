@@ -25,7 +25,7 @@ jest.mock('expo-router', () => ({
   // Simulate useFocusEffect: re-run the callback whenever it changes (deps = [cb])
   useFocusEffect: (cb: () => void) => {
     const { useEffect } = jest.requireActual('react');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     useEffect(cb, [cb]);
   },
 }));

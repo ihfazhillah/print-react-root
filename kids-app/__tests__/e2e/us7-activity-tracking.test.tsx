@@ -53,9 +53,7 @@ import { createDeviceApiClient } from '../../src/api/devices';
 import { useActivityTracking } from '../../src/hooks/useActivityTracking';
 
 const mockDeviceStorage = deviceStorage as jest.Mocked<typeof deviceStorage>;
-const mockCreateClient = createDeviceApiClient as jest.MockedFunction<
-  typeof createDeviceApiClient
->;
+const mockCreateClient = createDeviceApiClient as jest.MockedFunction<typeof createDeviceApiClient>;
 
 /** Minimal test component for useActivityTracking */
 function TrackingTester({
@@ -66,7 +64,7 @@ function TrackingTester({
   const hooks = useActivityTracking();
   React.useEffect(() => {
     onReady(hooks);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
 }
@@ -90,7 +88,13 @@ beforeEach(() => {
 // AS-5: Correct device token is passed
 test('AS-5: recordEvent is called with correct device token', async () => {
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await act(async () => {
     await hooks.trackView();
@@ -106,7 +110,13 @@ test('AS-5: recordEvent is called with correct device token', async () => {
 // AS-1: View event uses correct event_type
 test('AS-1: trackView sends event_type "view"', async () => {
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await act(async () => {
     await hooks.trackView('img-1');
@@ -122,7 +132,13 @@ test('AS-1: trackView sends event_type "view"', async () => {
 // AS-2: Detail event uses correct event_type
 test('AS-2: trackDetail sends event_type "detail"', async () => {
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await act(async () => {
     await hooks.trackDetail('img-2');
@@ -138,7 +154,13 @@ test('AS-2: trackDetail sends event_type "detail"', async () => {
 // AS-3: Print event uses correct event_type
 test('AS-3: trackPrint sends event_type "print"', async () => {
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await act(async () => {
     await hooks.trackPrint('img-3');
@@ -156,7 +178,13 @@ test('AS-4: tracking error is swallowed and does not throw', async () => {
   mockRecordEvent.mockRejectedValue(new Error('Network failure'));
 
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await expect(
     act(async () => {
@@ -171,7 +199,13 @@ test('skips sending event if device not registered', async () => {
   mockDeviceStorage.getToken.mockResolvedValue(null);
 
   let hooks!: ReturnType<typeof useActivityTracking>;
-  render(<TrackingTester onReady={(h) => { hooks = h; }} />);
+  render(
+    <TrackingTester
+      onReady={(h) => {
+        hooks = h;
+      }}
+    />,
+  );
 
   await act(async () => {
     await hooks.trackView();

@@ -28,8 +28,10 @@ export default function DetailScreen() {
   })();
 
   // Track detail view on mount (fire-and-forget)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (item) trackDetail(String(item.id)); }, []);
+
+  useEffect(() => {
+    if (item) trackDetail(String(item.id));
+  }, []);
 
   if (!item) return null;
 
@@ -58,7 +60,10 @@ export default function DetailScreen() {
 
         <View style={styles.section}>
           <PrintButton
-            onPrint={() => { printMutation.mutate(item.url); trackPrint(String(item.id)); }}
+            onPrint={() => {
+              printMutation.mutate(item.url);
+              trackPrint(String(item.id));
+            }}
             isPending={printMutation.isPending}
             isSuccess={printMutation.isSuccess}
             isError={printMutation.isError}
