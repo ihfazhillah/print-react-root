@@ -10,7 +10,7 @@ from typing import Optional
 import aiosqlite
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -20,18 +20,24 @@ from db import (
     bulk_translate_tags,
     create_page,
     create_tag,
+    deactivate_device,
     delete_page,
     delete_tag,
+    get_all_devices,
     get_all_tags,
     get_db,
+    get_device_by_token,
     get_interactions,
     get_items,
     get_page,
     get_related,
     get_tags,
     init_db,
+    record_activity_event,
     record_interaction,
+    register_device,
     search_by_tag,
+    update_device_name,
     update_page,
     update_tag,
 )
@@ -96,6 +102,20 @@ class InteractionCreate(BaseModel):
     page_id: int
     interaction_type: str
     session_id: str | None = None
+
+
+class DeviceRegister(BaseModel):
+    initial_name: str
+
+
+class DeviceNameUpdate(BaseModel):
+    name: str
+
+
+class ActivityEventCreate(BaseModel):
+    event_type: str
+    image_id: str | None = None
+    timestamp: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -452,6 +472,82 @@ async def get_print_image(url: str):
     except Exception as e:
         print(f"Error fetching print image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Device management endpoints
+# ---------------------------------------------------------------------------
+
+
+async def _get_authenticated_device(request: Request) -> dict:
+    """FastAPI dependency: validates Bearer token and returns device dict."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = auth[len("Bearer "):]
+    async with get_db() as db:
+        device = await get_device_by_token(db, token)
+    if device is None:
+        raise HTTPException(status_code=401, detail="Invalid or inactive device token")
+    return device
+
+
+@app.post("/api/devices/register", status_code=201)
+async def api_register_device(body: DeviceRegister):
+    """Register a new device and return its token."""
+    name = body.initial_name.strip()
+    if not name or len(name) > 50:
+        raise HTTPException(status_code=422, detail="initial_name must be 1-50 characters")
+    async with get_db() as db:
+        return await register_device(db, name)
+
+
+@app.patch("/api/devices/{device_id}/name")
+async def api_update_device_name(
+    device_id: str,
+    body: DeviceNameUpdate,
+    device: dict = Depends(_get_authenticated_device),
+):
+    """Update device name (device must authenticate with its own token)."""
+    if device["device_id"] != device_id:
+        raise HTTPException(status_code=403, detail="Token does not match device")
+    name = body.name.strip()
+    if not name or len(name) > 50:
+        raise HTTPException(status_code=422, detail="name must be 1-50 characters")
+    async with get_db() as db:
+        result = await update_device_name(db, device_id, name)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return result
+
+
+@app.post("/api/devices/{device_id}/events", status_code=201)
+async def api_record_activity_event(
+    device_id: str,
+    body: ActivityEventCreate,
+    device: dict = Depends(_get_authenticated_device),
+):
+    """Record an activity event for the authenticated device."""
+    if device["device_id"] != device_id:
+        raise HTTPException(status_code=403, detail="Token does not match device")
+    async with get_db() as db:
+        return await record_activity_event(db, device_id, body.model_dump())
+
+
+@app.get("/api/admin/devices")
+async def api_get_all_devices(include_inactive: bool = False):
+    """Admin endpoint: list all registered devices."""
+    async with get_db() as db:
+        return await get_all_devices(db, include_inactive=include_inactive)
+
+
+@app.delete("/api/admin/devices/{device_id}", status_code=204)
+async def api_deactivate_device(device_id: str):
+    """Admin endpoint: deactivate (soft-delete) a device."""
+    async with get_db() as db:
+        deleted = await deactivate_device(db, device_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Device not found or already inactive")
 
 
 if __name__ == "__main__":
