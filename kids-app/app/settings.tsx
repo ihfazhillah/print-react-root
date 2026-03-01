@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { useServerConfig } from '../src/hooks/useServerConfig';
+import { useDeviceSettings } from '../src/hooks/useDeviceSettings';
 import { colors } from '../src/theme';
 
 const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -21,6 +22,14 @@ export default function SettingsScreen() {
   const [port, setPort] = useState(String(config.port));
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const { deviceName, syncStatus, syncError, saveName } = useDeviceSettings();
+  const [nameInput, setNameInput] = useState('');
+
+  // Sync name input when stored name loads
+  useEffect(() => {
+    if (deviceName) setNameInput(deviceName);
+  }, [deviceName]);
 
   // Sync form fields from config whenever the screen gains focus or config loads.
   // This fixes stale values when navigating back: useState() only captures the
@@ -55,10 +64,47 @@ export default function SettingsScreen() {
     setSaved(true);
   };
 
+  const handleSaveName = async () => {
+    await saveName(nameInput);
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'Settings' }} />
       <View style={styles.container}>
+        <Text style={styles.sectionTitle}>Device</Text>
+
+        <Text style={styles.label}>Device Name</Text>
+        <TextInput
+          style={styles.input}
+          value={nameInput}
+          onChangeText={setNameInput}
+          placeholder="My Device"
+          autoCapitalize="words"
+          autoCorrect={false}
+          accessibilityLabel="Device name"
+        />
+        {syncStatus === 'syncing' && (
+          <Text style={styles.hint}>Saving…</Text>
+        )}
+        {syncStatus === 'synced' && (
+          <Text style={styles.success}>Name saved!</Text>
+        )}
+        {syncStatus === 'error' && syncError && (
+          <Text style={styles.error}>{syncError}</Text>
+        )}
+
+        <Pressable
+          style={styles.saveButton}
+          onPress={handleSaveName}
+          accessibilityRole="button"
+          accessibilityLabel="Save device name"
+        >
+          <Text style={styles.saveButtonText}>Save Name</Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>Server</Text>
+
         <Text style={styles.label}>Server IP Address</Text>
         <TextInput
           style={styles.input}
@@ -111,6 +157,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: 20,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: 24,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
@@ -125,6 +178,11 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: colors.surface,
+  },
+  hint: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginTop: 6,
   },
   error: {
     color: colors.errorText,

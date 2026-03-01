@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-query';
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
 import { ServerConfigProvider } from '../src/context/ServerConfigContext';
+import { useDeviceRegistration } from '../src/hooks/useDeviceRegistration';
 import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
@@ -42,6 +43,12 @@ function useAppStateFocus() {
   }, []);
 }
 
+/** Triggers device auto-registration once the app is connected. */
+function DeviceAutoRegister() {
+  useDeviceRegistration();
+  return null;
+}
+
 export default function RootLayout() {
   useAppStateFocus();
 
@@ -49,7 +56,8 @@ export default function RootLayout() {
     <ServerConfigProvider>
       <QueryClientProvider client={queryClient}>
         <ApiClientProvider>
-            <Stack
+          <DeviceAutoRegister />
+          <Stack
             screenOptions={{
               headerTitle: 'KM Kraft',
               headerStyle: { backgroundColor: colors.surface },

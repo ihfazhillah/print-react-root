@@ -37,6 +37,18 @@ jest.mock('../../src/hooks/useServerConfig', () => ({
   useServerConfig: (...args: unknown[]) => mockUseServerConfig(...args),
 }));
 
+// Mock useDeviceSettings so deviceStorage/AsyncStorage are not loaded.
+// Return empty deviceName so the useEffect inside settings.tsx doesn't
+// trigger an extra re-render (which would burn through mockReturnValueOnce).
+jest.mock('../../src/hooks/useDeviceSettings', () => ({
+  useDeviceSettings: jest.fn(() => ({
+    deviceName: '',
+    syncStatus: 'idle',
+    syncError: null,
+    saveName: jest.fn(),
+  })),
+}));
+
 // eslint-disable-next-line import/first
 import SettingsScreen from '../../app/settings';
 
