@@ -28,7 +28,7 @@ export default function HomeScreen() {
     if (!isSearching && items.length > 0) {
       trackView();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSearching, items.length]);
 
   const handleItemPress = useCallback(

@@ -11,10 +11,7 @@ export function useActivityTracking() {
   const { config } = useServerConfig();
 
   const sendEvent = useCallback(
-    async (
-      eventType: 'view' | 'detail' | 'print',
-      imageId?: string,
-    ): Promise<void> => {
+    async (eventType: 'view' | 'detail' | 'print', imageId?: string): Promise<void> => {
       const deviceId = await deviceStorage.getDeviceId();
       const token = await deviceStorage.getToken();
       if (!deviceId || !token) return; // Not registered yet — skip silently

@@ -47,7 +47,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useFocusEffect: (cb: () => void) => {
     const { useEffect } = jest.requireActual('react');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     useEffect(cb, [cb]);
   },
 }));
@@ -72,9 +72,7 @@ import { useDeviceRegistration } from '../../src/hooks/useDeviceRegistration';
 import SettingsScreen from '../../app/settings';
 
 const mockDeviceStorage = deviceStorage as jest.Mocked<typeof deviceStorage>;
-const mockCreateClient = createDeviceApiClient as jest.MockedFunction<
-  typeof createDeviceApiClient
->;
+const mockCreateClient = createDeviceApiClient as jest.MockedFunction<typeof createDeviceApiClient>;
 
 function TestComponent() {
   const state = useDeviceRegistration();
@@ -126,9 +124,7 @@ test('AS-1: registers device on first connection', async () => {
     expect(getByTestId('status').props.children).toBe('registered');
   });
 
-  const client = mockCreateClient.mock.results[0].value as ReturnType<
-    typeof createDeviceApiClient
-  >;
+  const client = mockCreateClient.mock.results[0].value as ReturnType<typeof createDeviceApiClient>;
   expect(client.register).toHaveBeenCalledWith({ initial_name: 'My Device' });
   expect(mockDeviceStorage.setToken).toHaveBeenCalledWith('token-abc123');
   expect(mockDeviceStorage.setDeviceId).toHaveBeenCalledWith('device-uuid-1');

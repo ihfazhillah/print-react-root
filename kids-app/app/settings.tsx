@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
 import { useServerConfig } from '../src/hooks/useServerConfig';
 import { useDeviceSettings } from '../src/hooks/useDeviceSettings';
 import { colors } from '../src/theme';
@@ -84,15 +83,9 @@ export default function SettingsScreen() {
           autoCorrect={false}
           accessibilityLabel="Device name"
         />
-        {syncStatus === 'syncing' && (
-          <Text style={styles.hint}>Saving…</Text>
-        )}
-        {syncStatus === 'synced' && (
-          <Text style={styles.success}>Name saved!</Text>
-        )}
-        {syncStatus === 'error' && syncError && (
-          <Text style={styles.error}>{syncError}</Text>
-        )}
+        {syncStatus === 'syncing' && <Text style={styles.hint}>Saving…</Text>}
+        {syncStatus === 'synced' && <Text style={styles.success}>Name saved!</Text>}
+        {syncStatus === 'error' && syncError && <Text style={styles.error}>{syncError}</Text>}
 
         <Pressable
           style={styles.saveButton}

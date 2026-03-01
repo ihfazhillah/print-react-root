@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createDeviceApiClient } from '../api/devices';
 import { deviceStorage } from '../storage/deviceStorage';
-import { getBaseUrl } from './useServerConfig';
-import { useServerConfig } from './useServerConfig';
+import { getBaseUrl, useServerConfig } from './useServerConfig';
 
 export type RegistrationStatus = 'idle' | 'registering' | 'registered' | 'error';
 
