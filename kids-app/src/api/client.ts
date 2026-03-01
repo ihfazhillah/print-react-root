@@ -13,6 +13,7 @@ export class ApiRequestError extends Error {
 }
 
 export interface ApiClient {
+  baseUrl: string;
   getItems(skip?: number, limit?: number): Promise<Item[]>;
   search(q: string, skip?: number, limit?: number): Promise<Item[]>;
   getRelated(itemIndex: number): Promise<Item[]>;
@@ -32,6 +33,7 @@ export function createApiClient(baseUrl: string): ApiClient {
   }
 
   return {
+    baseUrl,
     getItems: (skip = 0, limit = 20) =>
       request<Item[]>(`${baseUrl}/api/items?skip=${skip}&limit=${limit}`),
 

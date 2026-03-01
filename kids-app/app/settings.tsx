@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { useServerConfig } from '../src/hooks/useServerConfig';
 import { colors } from '../src/theme';
 
@@ -20,6 +21,18 @@ export default function SettingsScreen() {
   const [port, setPort] = useState(String(config.port));
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  // Sync form fields from config whenever the screen gains focus or config loads.
+  // This fixes stale values when navigating back: useState() only captures the
+  // initial config value; this effect keeps inputs in sync with saved state.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLoading) {
+        setIp(config.ip);
+        setPort(String(config.port));
+      }
+    }, [config.ip, config.port, isLoading]),
+  );
 
   if (isLoading) return null;
 

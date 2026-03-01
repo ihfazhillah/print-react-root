@@ -4,6 +4,11 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 // Mock expo-router
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
+  useFocusEffect: (cb: () => void) => {
+    const { useEffect } = jest.requireActual('react');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(cb, [cb]);
+  },
 }));
 
 // Mock useServerConfig
