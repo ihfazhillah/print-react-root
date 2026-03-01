@@ -55,6 +55,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    """Disable browser caching for static files so JS/CSS changes take effect immediately."""
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
