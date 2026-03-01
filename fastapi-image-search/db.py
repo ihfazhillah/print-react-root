@@ -1,7 +1,10 @@
 """Database connection, schema initialization, and query helpers for printable pages."""
 
 import os
+import secrets
+import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +54,31 @@ CREATE INDEX IF NOT EXISTS idx_interactions_page ON interactions(page_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_session ON interactions(session_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_type ON interactions(interaction_type);
 CREATE INDEX IF NOT EXISTS idx_interactions_created ON interactions(created_at);
+
+CREATE TABLE IF NOT EXISTS devices (
+    id TEXT PRIMARY KEY,
+    device_name TEXT NOT NULL CHECK(LENGTH(device_name) > 0 AND LENGTH(device_name) <= 50),
+    device_token TEXT NOT NULL UNIQUE,
+    registered_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_activity_at TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_devices_token ON devices(device_token);
+CREATE INDEX IF NOT EXISTS idx_devices_active ON devices(is_active);
+
+CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL REFERENCES devices(id),
+    event_type TEXT NOT NULL CHECK(event_type IN ('view', 'detail', 'print')),
+    image_id TEXT,
+    event_timestamp TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_device ON activity_events(device_id);
+CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON activity_events(event_timestamp);
 """
 
 
@@ -501,3 +529,112 @@ async def get_interactions(
         }
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Device management functions
+# ---------------------------------------------------------------------------
+
+
+def _utcnow() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+async def register_device(db: aiosqlite.Connection, initial_name: str) -> dict[str, Any]:
+    """Register a new device. Returns device_id, device_token, device_name, registered_at."""
+    device_id = str(uuid.uuid4())
+    device_token = secrets.token_hex(32)
+    registered_at = _utcnow()
+    await db.execute(
+        "INSERT INTO devices (id, device_name, device_token, registered_at) VALUES (?, ?, ?, ?)",
+        (device_id, initial_name, device_token, registered_at),
+    )
+    await db.commit()
+    return {
+        "device_id": device_id,
+        "device_token": device_token,
+        "device_name": initial_name,
+        "registered_at": registered_at,
+    }
+
+
+async def get_device_by_token(
+    db: aiosqlite.Connection, token: str
+) -> dict[str, Any] | None:
+    """Look up an active device by its token. Returns device dict or None."""
+    async with db.execute(
+        "SELECT * FROM devices WHERE device_token = ? AND is_active = 1", (token,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        return None
+    return {
+        "device_id": row["id"],
+        "device_name": row["device_name"],
+        "device_token": row["device_token"],
+        "registered_at": row["registered_at"],
+        "last_activity_at": row["last_activity_at"],
+        "is_active": bool(row["is_active"]),
+    }
+
+
+async def update_device_name(
+    db: aiosqlite.Connection, device_id: str, name: str
+) -> dict[str, Any] | None:
+    """Update device name. Returns updated device dict or None if not found."""
+    updated_at = _utcnow()
+    cursor = await db.execute(
+        "UPDATE devices SET device_name = ?, last_activity_at = ? WHERE id = ? AND is_active = 1",
+        (name, updated_at, device_id),
+    )
+    await db.commit()
+    if cursor.rowcount == 0:
+        return None
+    return {"device_id": device_id, "device_name": name, "updated_at": updated_at}
+
+
+async def record_activity_event(
+    db: aiosqlite.Connection, device_id: str, data: dict[str, Any]
+) -> dict[str, Any]:
+    """Record an activity event for a device. Returns event_id and status."""
+    event_id = str(uuid.uuid4())
+    now = _utcnow()
+    await db.execute(
+        "INSERT INTO activity_events (id, device_id, event_type, image_id, event_timestamp) VALUES (?, ?, ?, ?, ?)",
+        (event_id, device_id, data["event_type"], data.get("image_id"), data.get("timestamp") or now),
+    )
+    await db.execute(
+        "UPDATE devices SET last_activity_at = ? WHERE id = ?", (now, device_id)
+    )
+    await db.commit()
+    return {"event_id": event_id, "status": "recorded"}
+
+
+async def get_all_devices(
+    db: aiosqlite.Connection, include_inactive: bool = False
+) -> list[dict[str, Any]]:
+    """Return all devices (active only by default)."""
+    where = "" if include_inactive else "WHERE is_active = 1"
+    async with db.execute(
+        f"SELECT * FROM devices {where} ORDER BY registered_at DESC"
+    ) as cursor:
+        rows = await cursor.fetchall()
+    return [
+        {
+            "device_id": row["id"],
+            "device_name": row["device_name"],
+            "registered_at": row["registered_at"],
+            "last_activity_at": row["last_activity_at"],
+            "is_active": bool(row["is_active"]),
+        }
+        for row in rows
+    ]
+
+
+async def deactivate_device(db: aiosqlite.Connection, device_id: str) -> bool:
+    """Soft-delete a device. Returns True if found and deactivated."""
+    cursor = await db.execute(
+        "UPDATE devices SET is_active = 0 WHERE id = ? AND is_active = 1", (device_id,)
+    )
+    await db.commit()
+    return cursor.rowcount > 0
