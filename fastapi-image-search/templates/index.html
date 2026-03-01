@@ -32,6 +32,7 @@
                 <div class="admin-sub-tabs">
                     <button class="admin-sub-tab active" data-subtab="pages">Pages</button>
                     <button class="admin-sub-tab" data-subtab="tags">Tags</button>
+                    <button class="admin-sub-tab" data-subtab="devices">Devices</button>
                 </div>
 
                 <!-- Pages sub-tab -->
@@ -72,6 +73,27 @@
                         <tbody id="tagTableBody"></tbody>
                     </table>
                     <div class="admin-pagination" id="tagPagination"></div>
+                </div>
+
+                <!-- Devices sub-tab -->
+                <div id="devicesSubView" style="display:none">
+                    <div class="admin-toolbar">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:14px">
+                            <input type="checkbox" id="showInactiveDevices"> Show inactive
+                        </label>
+                    </div>
+                    <table class="admin-table" id="deviceTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Device ID</th>
+                                <th>Registered</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </main>
@@ -124,6 +146,22 @@
                 <div class="form-actions">
                     <button type="submit" class="admin-save-btn">Save</button>
                     <button type="button" class="admin-cancel-btn" id="tagCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Device Rename Modal -->
+    <div class="modal" id="deviceModal">
+        <div class="modal-content admin-modal-content">
+            <span class="close" id="deviceModalClose">&times;</span>
+            <h2>Rename Device</h2>
+            <form id="deviceForm">
+                <input type="hidden" id="editDeviceId">
+                <label>Device Name<input type="text" id="deviceFormName" required maxlength="50"></label>
+                <div class="form-actions">
+                    <button type="submit" class="admin-save-btn">Save</button>
+                    <button type="button" class="admin-cancel-btn" id="deviceCancelBtn">Cancel</button>
                 </div>
             </form>
         </div>
