@@ -8,6 +8,7 @@ import type { Item } from '../../src/types/api';
  *  Override individual methods via the `overrides` parameter. */
 export function createMockClient(overrides: Partial<ApiClient> = {}): ApiClient {
   return {
+    baseUrl: 'http://test-host:8080',
     getItems: jest.fn().mockResolvedValue([]),
     search: jest.fn().mockResolvedValue([]),
     getRelated: jest.fn().mockResolvedValue([]),

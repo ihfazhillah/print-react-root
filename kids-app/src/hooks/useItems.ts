@@ -8,7 +8,7 @@ export function useItems() {
   const client = useApiClient();
 
   return useInfiniteQuery<Item[], Error>({
-    queryKey: ['items'],
+    queryKey: ['items', client.baseUrl],
     queryFn: ({ pageParam = 0 }) => client.getItems(pageParam as number, PAGE_SIZE),
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>

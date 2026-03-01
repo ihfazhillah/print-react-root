@@ -10,6 +10,7 @@ import {
   onlineManager,
 } from '@tanstack/react-query';
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
+import { ServerConfigProvider } from '../src/context/ServerConfigContext';
 import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
@@ -45,16 +46,19 @@ export default function RootLayout() {
   useAppStateFocus();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ApiClientProvider>
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.textPrimary,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-      </ApiClientProvider>
-    </QueryClientProvider>
+    <ServerConfigProvider>
+      <QueryClientProvider client={queryClient}>
+        <ApiClientProvider>
+            <Stack
+            screenOptions={{
+              headerTitle: 'KM Kraft',
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.textPrimary,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        </ApiClientProvider>
+      </QueryClientProvider>
+    </ServerConfigProvider>
   );
 }

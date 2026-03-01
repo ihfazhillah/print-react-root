@@ -1,11 +1,9 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ServerConfig } from '../types/api';
-import { ServerConfigContext } from '../context/ServerConfigContext';
 
 const STORAGE_KEY = 'server_config';
 
-/** Minimal async key-value interface — defaults to AsyncStorage, tests pass in-memory. */
 export interface KvStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -23,15 +21,25 @@ function getDefaultConfig(): ServerConfig {
   };
 }
 
-export function useServerConfig(storage: KvStorage = defaultStorage) {
-  const ctx = useContext(ServerConfigContext);
+interface ServerConfigContextValue {
+  config: ServerConfig;
+  updateConfig: (next: ServerConfig) => Promise<void>;
+  isLoading: boolean;
+}
 
-  // Own state — only used when not inside ServerConfigProvider (e.g., isolated tests)
+export const ServerConfigContext = createContext<ServerConfigContextValue | null>(null);
+
+export function ServerConfigProvider({
+  children,
+  storage = defaultStorage,
+}: {
+  children: React.ReactNode;
+  storage?: KvStorage;
+}) {
   const [config, setConfig] = useState<ServerConfig>(getDefaultConfig());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (ctx) return; // Skip: managed by shared ServerConfigProvider
     storage.getItem(STORAGE_KEY).then((raw) => {
       if (raw) {
         try {
@@ -42,26 +50,23 @@ export function useServerConfig(storage: KvStorage = defaultStorage) {
       }
       setIsLoading(false);
     });
-  }, [storage, ctx]);
+  }, [storage]);
 
   const updateConfig = useCallback(
     async (next: ServerConfig) => {
-      if (ctx) {
-        await ctx.updateConfig(next);
-        return;
-      }
       setConfig(next);
       await storage.setItem(STORAGE_KEY, JSON.stringify(next));
     },
-    [storage, ctx],
+    [storage],
   );
 
-  // If inside ServerConfigProvider, use the shared context state
-  if (ctx) return ctx;
-
-  return { config, updateConfig, isLoading };
+  return (
+    <ServerConfigContext.Provider value={{ config, updateConfig, isLoading }}>
+      {children}
+    </ServerConfigContext.Provider>
+  );
 }
 
-export function getBaseUrl(config: ServerConfig): string {
-  return `http://${config.ip}:${config.port}`;
+export function useSharedServerConfig(): ServerConfigContextValue | null {
+  return useContext(ServerConfigContext);
 }
