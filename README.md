@@ -9,9 +9,16 @@ Kids' app for browsing and printing craft images. Features device tracking, serv
 ## Quick Start
 
 ### Prerequisites
-- Python 3.10+ (backend)
-- Node.js 18+ + npm (mobile)
-- Android SDK / Android emulator (for local mobile testing)
+- **Python 3.10+** with `uv` (for dependency management)
+  - Tested with Python 3.14.3
+- **Node.js 18+** + npm (mobile)
+  - Tested with Node.js 22.22.0 + npm 10.9.4
+- **Android SDK** / Android emulator (for local mobile testing)
+
+### Technology Versions
+- **Backend**: FastAPI 0.104.1+, uvicorn 0.24.0+, aiosqlite 0.22.1, deep-translator 1.11.4+
+- **Mobile**: React Native 0.81.5, Expo 54.0.33, TypeScript 5.9.3, @tanstack/react-query 5.90.21
+- **Database**: SQLite (file-based)
 
 ### Project Structure
 ```
@@ -37,21 +44,20 @@ print-react/
 ```bash
 cd fastapi-image-search
 
-# Create virtual env (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # or: venv\Scripts\activate (Windows)
+# Install uv (if not already installed)
+pip install uv
 
-# Install dependencies
-pip install -r requirements.txt  # or: uv sync
+# Install dependencies (uv handles venv automatically)
+uv sync
 ```
 
 ### Run Server
 ```bash
 # Development (with auto-reload)
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8080
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8080
 
 # Production
-python -m uvicorn main:app --host 0.0.0.0 --port 8080
+uv run uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
 Server runs on `http://localhost:8080`
@@ -59,7 +65,7 @@ Server runs on `http://localhost:8080`
 ### Database
 - File-based SQLite: `fastapi-image-search/printable_pages.db`
 - Schema auto-initializes on server startup
-- Seed with data: `python seed.py`
+- Seed with data: `uv run python seed.py`
 
 ### Test
 ```bash
@@ -222,7 +228,7 @@ lsof -i :8080
 
 # Clear database and restart
 rm fastapi-image-search/printable_pages.db
-python -m uvicorn main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 ### App crashes on connect
