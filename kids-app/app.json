@@ -23,7 +23,8 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/withNetworkSecurityConfig"
+      "./plugins/withNetworkSecurityConfig",
+      "./plugins/withInstallPermission"
     ],
     "ios": {
       "bundleIdentifier": "com.kmkraft.printreact"

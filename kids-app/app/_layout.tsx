@@ -12,6 +12,8 @@ import {
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
 import { ServerConfigProvider } from '../src/context/ServerConfigContext';
 import { useDeviceRegistration } from '../src/hooks/useDeviceRegistration';
+import { UpdateProvider } from '../src/context/UpdateContext';
+import { UpdateBar } from '../src/components/UpdateBar';
 import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
@@ -56,15 +58,18 @@ export default function RootLayout() {
     <ServerConfigProvider>
       <QueryClientProvider client={queryClient}>
         <ApiClientProvider>
-          <DeviceAutoRegister />
-          <Stack
-            screenOptions={{
-              headerTitle: 'KM Kraft',
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.textPrimary,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          />
+          <UpdateProvider>
+            <DeviceAutoRegister />
+            <UpdateBar />
+            <Stack
+              screenOptions={{
+                headerTitle: 'KM Kraft',
+                headerStyle: { backgroundColor: colors.surface },
+                headerTintColor: colors.textPrimary,
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            />
+          </UpdateProvider>
         </ApiClientProvider>
       </QueryClientProvider>
     </ServerConfigProvider>

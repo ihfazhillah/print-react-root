@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-21
 - SQLite (file-based, co-located with backend) (003-database-layer)
 - Python 3.10+ (existing) + FastAPI, aiosqlite (existing); deep-translator >=1.11.4 (new) (004-tag-crud-translation)
 - SQLite via aiosqlite (existing `printable_pages.db`) (004-tag-crud-translation)
+- TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo-file-system (existing), expo-intent-launcher (new), expo-application (new) (006-in-app-update)
+- N/A (ephemeral state only, APK cached in `FileSystem.cacheDirectory`) (006-in-app-update)
 
 - TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8 (001-kids-mobile-app)
 
@@ -60,9 +62,9 @@ respected in future dependency changes:
    Babel config or installing Babel plugins.
 
 ## Recent Changes
+- 006-in-app-update: Added TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo-file-system (existing), expo-intent-launcher (new), expo-application (new)
 - 004-tag-crud-translation: Added Python 3.10+ (existing) + FastAPI, aiosqlite (existing); deep-translator >=1.11.4 (new)
 - 003-database-layer: Added Python 3.10+ (existing) + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); aiosqlite 0.22.1 (new)
-- 002-pluggable-printer: Added Python 3.10+ + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); no new pip dependencies needed
 
 
 <!-- MANUAL ADDITIONS START -->

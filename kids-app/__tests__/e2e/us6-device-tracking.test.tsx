@@ -11,6 +11,18 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
+jest.mock('../../src/context/UpdateContext', () => ({
+  useUpdate: () => ({
+    checkForUpdate: jest.fn().mockResolvedValue(null),
+    checking: false,
+    updateInfo: null,
+    downloadState: { status: 'idle', progress: 0, error: null },
+    startDownload: jest.fn(),
+    cancelDownload: jest.fn(),
+    installUpdate: jest.fn(),
+  }),
+}));
+
 // --- Mocks declared with jest.fn() inside factory so hoisting works ---
 jest.mock('../../src/storage/deviceStorage', () => ({
   deviceStorage: {

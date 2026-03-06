@@ -20,6 +20,18 @@ import { ApiClientContext } from '../../src/api/apiClientContext';
 import { useItems } from '../../src/hooks/useItems';
 import { createMockClient, fakePrintItems } from '../helpers/renderWithProviders';
 
+jest.mock('../../src/context/UpdateContext', () => ({
+  useUpdate: () => ({
+    checkForUpdate: jest.fn().mockResolvedValue(null),
+    checking: false,
+    updateInfo: null,
+    downloadState: { status: 'idle', progress: 0, error: null },
+    startDownload: jest.fn(),
+    cancelDownload: jest.fn(),
+    installUpdate: jest.fn(),
+  }),
+}));
+
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   // Simulate useFocusEffect: re-run the callback whenever it changes (deps = [cb])
