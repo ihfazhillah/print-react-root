@@ -847,7 +847,7 @@ function renderDeviceTable(devices) {
 
   if (devices.length === 0) {
     deviceTableBody.innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:#888">No devices registered</td></tr>';
+      '<tr><td colspan="6" style="text-align:center;color:#888">No devices registered</td></tr>';
     return;
   }
 
@@ -856,17 +856,36 @@ function renderDeviceTable(devices) {
       ? new Date(device.registered_at).toLocaleString()
       : "—";
     const isActive = device.is_active !== false;
+    const isAdmin = !!device.is_admin;
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${device.device_name || "—"}</td>
       <td style="font-size:12px;color:#888">${device.device_id}</td>
       <td style="font-size:12px">${registered}</td>
       <td><span style="color:${isActive ? "green" : "#aaa"}">${isActive ? "Active" : "Inactive"}</span></td>
+      <td><label style="cursor:pointer"><input type="checkbox" class="admin-toggle" data-id="${device.device_id}" ${isAdmin ? "checked" : ""}></label></td>
       <td class="admin-actions">
         ${isActive ? `<button class="admin-edit-btn" data-id="${device.device_id}" data-name="${device.device_name || ""}">Rename</button>` : ""}
         ${isActive ? `<button class="admin-delete-btn" data-id="${device.device_id}">Deactivate</button>` : ""}
       </td>
     `;
+
+    tr.querySelector(".admin-toggle")?.addEventListener("change", async (e) => {
+      const deviceId = e.currentTarget.dataset.id;
+      const newValue = e.currentTarget.checked;
+      try {
+        const resp = await fetch(`/api/admin/devices/${deviceId}/admin`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_admin: newValue }),
+        });
+        if (!resp.ok) throw new Error("Failed to update admin flag");
+        showToast(newValue ? "Marked as admin" : "Removed admin flag");
+      } catch (err) {
+        e.currentTarget.checked = !newValue; // revert
+        showToast("Error updating admin flag", true);
+      }
+    });
 
     tr.querySelector(".admin-edit-btn")?.addEventListener("click", (e) => {
       openRenameDeviceModal(

@@ -1,0 +1,193 @@
+/* Usage Insights Dashboard Styles */
+
+.insights-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.insights-container h1 {
+  margin-bottom: 8px;
+}
+
+.insights-container .subtitle {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+/* Summary cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.summary-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+}
+
+.summary-card .stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-card .stat:last-child {
+  border-bottom: none;
+}
+
+.summary-card .stat-value {
+  font-weight: 600;
+}
+
+.summary-card .inactive-label {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Sections */
+.insights-section {
+  margin-bottom: 32px;
+}
+
+.insights-section h2 {
+  border-bottom: 2px solid #333;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+/* Tag lists */
+.device-tags {
+  margin-bottom: 16px;
+}
+
+.device-tags h4 {
+  margin: 0 0 8px 0;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tag-item {
+  background: #e8f4fd;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+.tag-item .count {
+  font-weight: 600;
+  color: #1976d2;
+}
+
+/* Image grid */
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.image-card {
+  text-align: center;
+}
+
+.image-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.image-card .print-count {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Interests */
+.interest-group {
+  margin-bottom: 12px;
+}
+
+.interest-group .devices {
+  color: #666;
+  font-size: 13px;
+}
+
+.no-data {
+  color: #999;
+  font-style: italic;
+  padding: 12px 0;
+}
+
+/* Back link */
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Timeline */
+.timeline-date {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.timeline-event {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.timeline-event img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.event-type {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.event-type.view { background: #e3f2fd; color: #1565c0; }
+.event-type.detail { background: #fff3e0; color: #e65100; }
+.event-type.print { background: #e8f5e9; color: #2e7d32; }
+
+.event-time {
+  color: #999;
+  font-size: 12px;
+}

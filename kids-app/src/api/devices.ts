@@ -7,7 +7,7 @@ import type {
   DeviceRegistrationResponse,
 } from '../types/device';
 import { ApiRequestError } from './client';
-import type { ApiError } from '../types/api';
+import type { ApiError, Item } from '../types/api';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -55,6 +55,12 @@ export function createDeviceApiClient(baseUrl: string) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(data),
+      });
+    },
+
+    getRecommendations(deviceId: string, token: string): Promise<Item[]> {
+      return request<Item[]>(`${baseUrl}/api/devices/${deviceId}/recommendations`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
     },
   };

@@ -44,6 +44,10 @@ jest.mock('expo-image', () => {
   };
 });
 
+jest.mock('../../src/hooks/useRecommendations', () => ({
+  useRecommendations: () => ({ data: [], isLoading: false }),
+}));
+
 // eslint-disable-next-line import/first
 import HomeScreen from '../../app/index';
 

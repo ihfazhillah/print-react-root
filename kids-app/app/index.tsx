@@ -4,8 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter } from 'expo-router';
 import { SearchBar } from '../src/components/SearchBar';
 import { ImageGrid } from '../src/components/ImageGrid';
+import { RecommendationRow } from '../src/components/RecommendationRow';
 import { useItems } from '../src/hooks/useItems';
 import { useSearch } from '../src/hooks/useSearch';
+import { useRecommendations } from '../src/hooks/useRecommendations';
 import { useActivityTracking } from '../src/hooks/useActivityTracking';
 import { isCollection } from '../src/types/api';
 import { colors } from '../src/theme';
@@ -19,6 +21,8 @@ export default function HomeScreen() {
 
   const itemsQuery = useItems();
   const searchQ = useSearch(searchQuery);
+  const recsQuery = useRecommendations();
+  const recommendations = useMemo(() => recsQuery.data ?? [], [recsQuery.data]);
 
   const activeQuery = isSearching ? searchQ : itemsQuery;
   const items = useMemo(() => activeQuery.data?.pages.flat() ?? [], [activeQuery.data?.pages]);
@@ -37,6 +41,17 @@ export default function HomeScreen() {
       router.push({
         pathname: route,
         params: { id: String(globalIndex), item: JSON.stringify(item) },
+      });
+    },
+    [router],
+  );
+
+  const handleRecPress = useCallback(
+    (item: Item) => {
+      const route = isCollection(item) ? '/collection/[id]' : '/detail/[id]';
+      router.push({
+        pathname: route,
+        params: { id: String(item.id ?? 0), item: JSON.stringify(item) },
       });
     },
     [router],
@@ -68,6 +83,9 @@ export default function HomeScreen() {
       />
       <StatusBar style="auto" />
       <SearchBar onSearch={setSearchQuery} />
+      {!isSearching && recommendations.length >= 2 && (
+        <RecommendationRow items={recommendations} onItemPress={handleRecPress} />
+      )}
       <ImageGrid
         items={items}
         onItemPress={handleItemPress}

@@ -4,6 +4,7 @@ export interface SearchTag {
 }
 
 interface BaseItem {
+  id?: number;
   thumbnail: string;
   url: string;
   searches: SearchTag[];

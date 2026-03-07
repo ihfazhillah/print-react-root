@@ -27,16 +27,23 @@ from db import (
     get_all_tags,
     get_db,
     get_device_by_token,
+    get_device_timeline,
     get_interactions,
     get_items,
     get_page,
+    get_recommendations,
     get_related,
+    get_shared_unique_interests,
     get_tags,
+    get_top_images,
+    get_top_tags_per_device,
+    get_usage_summary,
     init_db,
     record_activity_event,
     record_interaction,
     register_device,
     search_by_tag,
+    set_device_admin,
     update_device_name,
     update_page,
     update_tag,
@@ -126,6 +133,10 @@ class ActivityEventCreate(BaseModel):
     event_type: str
     image_id: str | None = None
     timestamp: str | None = None
+
+
+class DeviceAdminUpdate(BaseModel):
+    is_admin: bool
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +394,74 @@ async def api_get_interactions(
 
 
 # ---------------------------------------------------------------------------
+# Analytics endpoints (007-usage-insights)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/insights", response_class=HTMLResponse)
+async def insights_page(request: Request):
+    """Admin insights dashboard page."""
+    async with get_db() as db:
+        summary = await get_usage_summary(db)
+        top_tags = await get_top_tags_per_device(db, limit=5)
+        top_images = await get_top_images(db, limit=10)
+        interests = await get_shared_unique_interests(db)
+    return templates.TemplateResponse("insights.html", {
+        "request": request,
+        "summary": summary,
+        "top_tags": top_tags,
+        "top_images": top_images,
+        "interests": interests,
+    })
+
+
+@app.get("/insights/{device_id}", response_class=HTMLResponse)
+async def insights_detail_page(request: Request, device_id: str):
+    """Per-kid activity timeline page."""
+    async with get_db() as db:
+        timeline = await get_device_timeline(db, device_id, limit=100)
+    return templates.TemplateResponse("insights_detail.html", {
+        "request": request,
+        "timeline": timeline,
+    })
+
+
+@app.get("/api/admin/insights/summary")
+async def api_insights_summary():
+    """Per-device usage statistics, excluding admin devices."""
+    async with get_db() as db:
+        return await get_usage_summary(db)
+
+
+@app.get("/api/admin/insights/top-tags")
+async def api_insights_top_tags(limit: int = 5):
+    """Top printed tags per non-admin device."""
+    async with get_db() as db:
+        return await get_top_tags_per_device(db, limit=min(limit, 20))
+
+
+@app.get("/api/admin/insights/top-images")
+async def api_insights_top_images(limit: int = 10):
+    """Most printed images overall and per non-admin device."""
+    async with get_db() as db:
+        return await get_top_images(db, limit=limit)
+
+
+@app.get("/api/admin/devices/{device_id}/timeline")
+async def api_device_timeline(device_id: str, limit: int = 50, offset: int = 0):
+    """Activity timeline for a specific device, grouped by date."""
+    async with get_db() as db:
+        return await get_device_timeline(db, device_id, limit=limit, offset=offset)
+
+
+@app.get("/api/admin/insights/interests")
+async def api_insights_interests():
+    """Shared and unique tag preferences across non-admin devices."""
+    async with get_db() as db:
+        return await get_shared_unique_interests(db)
+
+
+# ---------------------------------------------------------------------------
 # Image proxy & printing (unchanged)
 # ---------------------------------------------------------------------------
 
@@ -559,6 +638,29 @@ async def api_admin_update_device_name(device_id: str, body: DeviceNameUpdate):
         raise HTTPException(status_code=422, detail="name must be 1-50 characters")
     async with get_db() as db:
         result = await update_device_name(db, device_id, name)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return result
+
+
+@app.get("/api/devices/{device_id}/recommendations")
+async def api_device_recommendations(
+    device_id: str,
+    limit: int = 20,
+    device: dict = Depends(_get_authenticated_device),
+):
+    """Personalized image recommendations based on device's print history."""
+    if device["device_id"] != device_id:
+        raise HTTPException(status_code=403, detail="Token does not match device")
+    async with get_db() as db:
+        return await get_recommendations(db, device_id, limit=limit)
+
+
+@app.patch("/api/admin/devices/{device_id}/admin")
+async def api_set_device_admin(device_id: str, body: DeviceAdminUpdate):
+    """Admin endpoint: toggle is_admin flag on a device."""
+    async with get_db() as db:
+        result = await set_device_admin(db, device_id, body.is_admin)
     if result is None:
         raise HTTPException(status_code=404, detail="Device not found")
     return result

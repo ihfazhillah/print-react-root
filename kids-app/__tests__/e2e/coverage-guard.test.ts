@@ -58,6 +58,11 @@ const REQUIRED_E2E_COVERAGE = [
     file: 'us7-activity-tracking.test.tsx',
     scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4', 'AS-5'],
   },
+  {
+    story: 'US8 — Personalized Home Feed (007)',
+    file: 'us8-personalized-feed.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4'],
+  },
 ];
 
 describe('E2E coverage guard', () => {

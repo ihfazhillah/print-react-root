@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ timeline.device_name }} - Activity Timeline</title>
+  <link rel="stylesheet" href="/static/insights.css">
+</head>
+<body>
+  <div class="insights-container">
+    <a href="/insights" class="back-link">&larr; Back to Insights</a>
+    <h1>{{ timeline.device_name or "Unknown Device" }}</h1>
+    <p class="subtitle">Activity Timeline</p>
+
+    {% if timeline.events %}
+    {% for group in timeline.events %}
+    <div class="timeline-date">{{ group.date }}</div>
+    {% for event in group["items"] %}
+    <div class="timeline-event">
+      <span class="event-type {{ event.event_type }}">{{ event.event_type }}</span>
+      {% if event.thumbnail %}
+      <img src="/api/proxy-image?url={{ event.thumbnail }}" alt="Image" loading="lazy">
+      {% endif %}
+      <span class="event-time">{{ event.timestamp }}</span>
+    </div>
+    {% endfor %}
+    {% endfor %}
+    {% else %}
+    <p class="no-data">No activity yet.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

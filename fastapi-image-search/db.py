@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS devices (
     device_token TEXT NOT NULL UNIQUE,
     registered_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_activity_at TEXT,
-    is_active INTEGER NOT NULL DEFAULT 1
+    is_active INTEGER NOT NULL DEFAULT 1,
+    is_admin INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_devices_token ON devices(device_token);
@@ -88,6 +89,14 @@ async def init_db(db_path: str | None = None) -> None:
     async with aiosqlite.connect(path) as db:
         await db.execute("PRAGMA foreign_keys = ON")
         await db.executescript(SCHEMA_SQL)
+        # Migration: add is_admin column to existing devices table
+        try:
+            await db.execute(
+                "ALTER TABLE devices ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
+            )
+        except aiosqlite.OperationalError:
+            pass  # Column already exists
+
         # Migration: add id_translation column to existing tags table
         try:
             await db.execute(
@@ -626,9 +635,30 @@ async def get_all_devices(
             "registered_at": row["registered_at"],
             "last_activity_at": row["last_activity_at"],
             "is_active": bool(row["is_active"]),
+            "is_admin": bool(row["is_admin"]),
         }
         for row in rows
     ]
+
+
+async def set_device_admin(
+    db: aiosqlite.Connection, device_id: str, is_admin: bool
+) -> dict[str, Any] | None:
+    """Set the is_admin flag on a device. Returns updated device dict or None."""
+    cursor = await db.execute(
+        "UPDATE devices SET is_admin = ? WHERE id = ?",
+        (1 if is_admin else 0, device_id),
+    )
+    await db.commit()
+    if cursor.rowcount == 0:
+        return None
+    async with db.execute("SELECT * FROM devices WHERE id = ?", (device_id,)) as c:
+        row = await c.fetchone()
+    return {
+        "device_id": row["id"],
+        "device_name": row["device_name"],
+        "is_admin": bool(row["is_admin"]),
+    }
 
 
 async def deactivate_device(db: aiosqlite.Connection, device_id: str) -> bool:
@@ -638,3 +668,316 @@ async def deactivate_device(db: aiosqlite.Connection, device_id: str) -> bool:
     )
     await db.commit()
     return cursor.rowcount > 0
+
+
+# ---------------------------------------------------------------------------
+# Analytics query functions (007-usage-insights)
+# ---------------------------------------------------------------------------
+
+_NON_ADMIN_FILTER = "device_id NOT IN (SELECT id FROM devices WHERE is_admin = 1)"
+
+
+async def get_usage_summary(db: aiosqlite.Connection) -> list[dict[str, Any]]:
+    """Per-device usage stats (views, details, prints), excluding admin devices."""
+    async with db.execute(
+        f"""
+        SELECT
+            d.id AS device_id,
+            d.device_name,
+            d.is_active,
+            COALESCE(SUM(CASE WHEN ae.event_type = 'view' THEN 1 ELSE 0 END), 0) AS total_views,
+            COALESCE(SUM(CASE WHEN ae.event_type = 'detail' THEN 1 ELSE 0 END), 0) AS total_details,
+            COALESCE(SUM(CASE WHEN ae.event_type = 'print' THEN 1 ELSE 0 END), 0) AS total_prints
+        FROM devices d
+        LEFT JOIN activity_events ae ON ae.device_id = d.id
+        WHERE d.is_admin = 0
+        GROUP BY d.id
+        ORDER BY total_prints DESC
+        """
+    ) as cursor:
+        rows = await cursor.fetchall()
+    return [
+        {
+            "device_id": row["device_id"],
+            "device_name": row["device_name"],
+            "is_active": bool(row["is_active"]),
+            "total_views": row["total_views"],
+            "total_details": row["total_details"],
+            "total_prints": row["total_prints"],
+        }
+        for row in rows
+    ]
+
+
+async def get_top_tags_per_device(
+    db: aiosqlite.Connection, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Top printed tags per non-admin device, ranked by print count."""
+    async with db.execute(
+        f"""
+        SELECT
+            d.id AS device_id,
+            d.device_name,
+            t.id AS tag_id,
+            t.name AS tag_name,
+            t.id_translation,
+            COUNT(*) AS print_count
+        FROM activity_events ae
+        JOIN devices d ON d.id = ae.device_id
+        JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
+        JOIN page_tags pt ON pt.page_id = pp.id
+        JOIN tags t ON t.id = pt.tag_id
+        WHERE ae.event_type = 'print'
+          AND {_NON_ADMIN_FILTER}
+        GROUP BY d.id, t.id
+        ORDER BY d.device_name, print_count DESC
+        """
+    ) as cursor:
+        rows = await cursor.fetchall()
+
+    # Group by device with limit
+    devices: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        did = row["device_id"]
+        if did not in devices:
+            devices[did] = {
+                "device_id": did,
+                "device_name": row["device_name"],
+                "top_tags": [],
+            }
+        if len(devices[did]["top_tags"]) < limit:
+            devices[did]["top_tags"].append({
+                "tag_id": row["tag_id"],
+                "tag_name": row["tag_name"],
+                "id_translation": row["id_translation"],
+                "print_count": row["print_count"],
+            })
+    return list(devices.values())
+
+
+async def get_top_images(
+    db: aiosqlite.Connection, limit: int = 10
+) -> dict[str, Any]:
+    """Most printed images overall and per non-admin device."""
+    # Overall
+    async with db.execute(
+        f"""
+        SELECT
+            CAST(ae.image_id AS INTEGER) AS image_id,
+            pp.thumbnail,
+            pp.url,
+            COUNT(*) AS print_count
+        FROM activity_events ae
+        JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
+        WHERE ae.event_type = 'print'
+          AND {_NON_ADMIN_FILTER}
+        GROUP BY ae.image_id
+        ORDER BY print_count DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ) as cursor:
+        overall_rows = await cursor.fetchall()
+
+    async def _image_tags(db: aiosqlite.Connection, image_id: int) -> list[str]:
+        async with db.execute(
+            "SELECT t.name FROM page_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.page_id = ?",
+            (image_id,),
+        ) as c:
+            return [r["name"] for r in await c.fetchall()]
+
+    overall = []
+    for row in overall_rows:
+        tags = await _image_tags(db, row["image_id"])
+        overall.append({
+            "image_id": row["image_id"],
+            "thumbnail": row["thumbnail"],
+            "url": row["url"],
+            "print_count": row["print_count"],
+            "tags": tags,
+        })
+
+    # Per device
+    async with db.execute(
+        f"""
+        SELECT
+            d.id AS device_id,
+            d.device_name,
+            CAST(ae.image_id AS INTEGER) AS image_id,
+            pp.thumbnail,
+            pp.url,
+            COUNT(*) AS print_count
+        FROM activity_events ae
+        JOIN devices d ON d.id = ae.device_id
+        JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
+        WHERE ae.event_type = 'print'
+          AND {_NON_ADMIN_FILTER}
+        GROUP BY d.id, ae.image_id
+        ORDER BY d.device_name, print_count DESC
+        """
+    ) as cursor:
+        per_device_rows = await cursor.fetchall()
+
+    per_device: dict[str, dict[str, Any]] = {}
+    for row in per_device_rows:
+        did = row["device_id"]
+        if did not in per_device:
+            per_device[did] = {
+                "device_id": did,
+                "device_name": row["device_name"],
+                "top_images": [],
+            }
+        if len(per_device[did]["top_images"]) < limit:
+            tags = await _image_tags(db, row["image_id"])
+            per_device[did]["top_images"].append({
+                "image_id": row["image_id"],
+                "thumbnail": row["thumbnail"],
+                "url": row["url"],
+                "print_count": row["print_count"],
+                "tags": tags,
+            })
+
+    return {"overall": overall, "per_device": list(per_device.values())}
+
+
+async def get_shared_unique_interests(db: aiosqlite.Connection) -> dict[str, Any]:
+    """Shared and unique tag preferences across non-admin devices (top 5 tags each)."""
+    per_device = await get_top_tags_per_device(db, limit=5)
+
+    # Build tag → set of device names
+    tag_devices: dict[str, set[str]] = {}
+    for d in per_device:
+        for tag in d["top_tags"]:
+            tag_devices.setdefault(tag["tag_name"], set()).add(d["device_name"])
+
+    shared = [
+        {"tag_name": tag, "devices": sorted(devs)}
+        for tag, devs in tag_devices.items()
+        if len(devs) > 1
+    ]
+
+    unique: dict[str, list[str]] = {}
+    for tag, devs in tag_devices.items():
+        if len(devs) == 1:
+            name = next(iter(devs))
+            unique.setdefault(name, []).append(tag)
+
+    return {
+        "shared": sorted(shared, key=lambda x: len(x["devices"]), reverse=True),
+        "unique": [
+            {"device_name": name, "tags": tags}
+            for name, tags in sorted(unique.items())
+        ],
+    }
+
+
+async def get_recommendations(
+    db: aiosqlite.Connection, device_id: str, limit: int = 20
+) -> list[dict[str, Any]]:
+    """Images from device's top tags that the device hasn't printed, randomized."""
+    # Check minimum prints
+    async with db.execute(
+        "SELECT COUNT(*) AS cnt FROM activity_events WHERE device_id = ? AND event_type = 'print'",
+        (device_id,),
+    ) as cursor:
+        row = await cursor.fetchone()
+        if row["cnt"] < 2:
+            return []
+
+    # Get device's top 5 tags by print count
+    async with db.execute(
+        """
+        SELECT t.id AS tag_id
+        FROM activity_events ae
+        JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
+        JOIN page_tags pt ON pt.page_id = pp.id
+        JOIN tags t ON t.id = pt.tag_id
+        WHERE ae.device_id = ? AND ae.event_type = 'print'
+        GROUP BY t.id
+        ORDER BY COUNT(*) DESC
+        LIMIT 5
+        """,
+        (device_id,),
+    ) as cursor:
+        top_tag_ids = [r["tag_id"] for r in await cursor.fetchall()]
+
+    if not top_tag_ids:
+        return []
+
+    # Get printed image IDs for this device
+    async with db.execute(
+        "SELECT DISTINCT CAST(image_id AS INTEGER) AS iid FROM activity_events WHERE device_id = ? AND event_type = 'print'",
+        (device_id,),
+    ) as cursor:
+        printed_ids = {r["iid"] for r in await cursor.fetchall()}
+
+    placeholders = ",".join("?" * len(top_tag_ids))
+    async with db.execute(
+        f"""
+        SELECT DISTINCT pp.*
+        FROM printable_pages pp
+        JOIN page_tags pt ON pt.page_id = pp.id
+        WHERE pt.tag_id IN ({placeholders})
+          AND pp.parent_id IS NULL
+          AND pp.id NOT IN ({",".join("?" * len(printed_ids)) if printed_ids else "NULL"})
+        ORDER BY RANDOM()
+        LIMIT ?
+        """,
+        (*top_tag_ids, *printed_ids, limit),
+    ) as cursor:
+        rows = await cursor.fetchall()
+
+    return [await _build_item_dict(db, r) for r in rows]
+
+
+async def get_device_timeline(
+    db: aiosqlite.Connection,
+    device_id: str,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """Activity timeline for a device, grouped by date, reverse chronological."""
+    # Get device name
+    async with db.execute(
+        "SELECT device_name FROM devices WHERE id = ?", (device_id,)
+    ) as cursor:
+        dev = await cursor.fetchone()
+    if dev is None:
+        return {"device_name": None, "events": []}
+
+    async with db.execute(
+        """
+        SELECT
+            ae.event_type,
+            CAST(ae.image_id AS INTEGER) AS image_id,
+            pp.thumbnail,
+            ae.event_timestamp,
+            DATE(ae.event_timestamp) AS event_date
+        FROM activity_events ae
+        LEFT JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
+        WHERE ae.device_id = ?
+        ORDER BY ae.event_timestamp DESC
+        LIMIT ? OFFSET ?
+        """,
+        (device_id, limit, offset),
+    ) as cursor:
+        rows = await cursor.fetchall()
+
+    # Group by date
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        date = row["event_date"] or "unknown"
+        grouped.setdefault(date, []).append({
+            "event_type": row["event_type"],
+            "image_id": row["image_id"],
+            "thumbnail": row["thumbnail"],
+            "timestamp": row["event_timestamp"],
+        })
+
+    return {
+        "device_name": dev["device_name"],
+        "events": [
+            {"date": date, "items": items}
+            for date, items in grouped.items()
+        ],
+    }

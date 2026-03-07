@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage Insights - KM Kraft</title>
+  <link rel="stylesheet" href="/static/insights.css">
+</head>
+<body>
+  <div class="insights-container">
+    <a href="/" class="back-link">&larr; Back to Dashboard</a>
+    <h1>Usage Insights</h1>
+    <p class="subtitle">How each kid uses the app (admin devices excluded)</p>
+
+    <!-- Summary Cards -->
+    <div class="insights-section">
+      <h2>Per-Kid Summary</h2>
+      {% if summary %}
+      <div class="summary-cards">
+        {% for device in summary %}
+        <div class="summary-card">
+          <h3>
+            <a href="/insights/{{ device.device_id }}">{{ device.device_name }}</a>
+            {% if not device.is_active %}<span class="inactive-label">(inactive)</span>{% endif %}
+          </h3>
+          <div class="stat"><span>Views</span><span class="stat-value">{{ device.total_views }}</span></div>
+          <div class="stat"><span>Details</span><span class="stat-value">{{ device.total_details }}</span></div>
+          <div class="stat"><span>Prints</span><span class="stat-value">{{ device.total_prints }}</span></div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="no-data">No activity yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Top Tags Per Kid -->
+    <div class="insights-section">
+      <h2>Top Tags Per Kid</h2>
+      {% if top_tags %}
+      {% for device in top_tags %}
+      <div class="device-tags">
+        <h4>{{ device.device_name }}</h4>
+        {% if device.top_tags %}
+        <ul class="tag-list">
+          {% for tag in device.top_tags %}
+          <li class="tag-item">
+            {{ tag.tag_name }}
+            {% if tag.id_translation %}<small>({{ tag.id_translation }})</small>{% endif %}
+            <span class="count">&times;{{ tag.print_count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="no-data">No prints yet.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="no-data">No print data available.</p>
+      {% endif %}
+    </div>
+
+    <!-- Most Printed Images -->
+    <div class="insights-section">
+      <h2>Most Printed Images</h2>
+      {% if top_images.overall %}
+      <div class="image-grid">
+        {% for img in top_images.overall %}
+        <div class="image-card">
+          <img src="/api/proxy-image?url={{ img.thumbnail }}" alt="Image {{ img.image_id }}" loading="lazy">
+          <div class="print-count">{{ img.print_count }} prints</div>
+          <div style="font-size:11px;color:#888">{{ img.tags | join(', ') }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="no-data">No prints yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Shared & Unique Interests -->
+    <div class="insights-section">
+      <h2>Shared Interests</h2>
+      {% if interests.shared %}
+      {% for item in interests.shared %}
+      <div class="interest-group">
+        <strong>{{ item.tag_name }}</strong>
+        <span class="devices">— {{ item.devices | join(', ') }}</span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="no-data">No shared interests found.</p>
+      {% endif %}
+    </div>
+
+    <div class="insights-section">
+      <h2>Unique Interests</h2>
+      {% if interests.unique %}
+      {% for item in interests.unique %}
+      <div class="interest-group">
+        <strong>{{ item.device_name }}</strong>:
+        {% for tag in item.tags %}
+        <span class="tag-item">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="no-data">All kids share similar interests.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
