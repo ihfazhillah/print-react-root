@@ -108,7 +108,55 @@
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Clarification Updates (Session 2026-03-07)
+
+**Purpose**: Apply spec clarifications from session 2026-03-07
+
+- [x] T035 Update `get_recommendations` in fastapi-image-search/db.py to weight tags by interaction type (print=3, detail=1) instead of print-only count. Change top-tags query to use `SUM(CASE WHEN event_type='print' THEN 3 WHEN event_type='detail' THEN 1 ELSE 0 END)` and include detail events in the query filter.
+- [x] T036 Update backend test for recommendations to verify weighted scoring (detail events influence tag ranking) in fastapi-image-search/tests/test_insights.py
+- [x] T037 Run all backend tests: `cd fastapi-image-search && uv run python -m unittest discover -v`
+- [x] T038 Run all mobile tests: `cd kids-app && npm test`
+
+---
+
+## Phase 7: User Story 4 - Stable Device Identity (Priority: P1)
+
+**Goal**: Device identity persists across APK reinstalls using ANDROID_ID. Admin can merge duplicate device records.
+
+**Independent Test**: Reinstall APK → same device_id returned. Admin merges two devices → events consolidated.
+
+### Backend (implemented)
+
+- [x] T039 [US4] Add `android_id` column to devices table schema and migration in fastapi-image-search/db.py
+- [x] T040 [US4] Add `get_device_by_android_id()` lookup function in fastapi-image-search/db.py
+- [x] T041 [US4] Update `register_device()` to accept optional `android_id` and return existing device if match found in fastapi-image-search/db.py
+- [x] T042 [US4] Add `link_android_id()` function in fastapi-image-search/db.py
+- [x] T043 [US4] Add `PATCH /api/devices/{device_id}/android-id` endpoint in fastapi-image-search/main.py
+- [x] T044 [US4] Update `POST /api/devices/register` to accept optional `android_id` in fastapi-image-search/main.py
+- [x] T045 [US4] Add backend tests for android_id registration, linking, and conflict in fastapi-image-search/tests/test_insights.py
+
+### Mobile (implemented)
+
+- [x] T046 [US4] Install `expo-application` dependency in kids-app/
+- [x] T047 [US4] Add `android_id` field to `DeviceRegistrationRequest` type in kids-app/src/types/device.ts
+- [x] T048 [US4] Add `linkAndroidId()` method to device API client in kids-app/src/api/devices.ts
+- [x] T049 [US4] Add `androidIdLinked` storage key in kids-app/src/storage/deviceStorage.ts
+- [x] T050 [US4] Update `useDeviceRegistration` hook to send ANDROID_ID on register and link on existing devices in kids-app/src/hooks/useDeviceRegistration.ts
+
+### Admin Merge
+
+- [x] T051 [US4] Add `merge_devices(db, source_id, target_id)` function in fastapi-image-search/db.py — moves all activity_events from source to target, deactivates source
+- [x] T052 [US4] Add `POST /api/admin/devices/merge` endpoint in fastapi-image-search/main.py
+- [x] T053 [US4] Add merge UI to admin devices page in fastapi-image-search/templates/index.html
+- [x] T054 [US4] Add backend tests for merge (events moved, source deactivated, self-merge rejected) in fastapi-image-search/tests/test_insights.py
+- [x] T055 Run all backend tests: `cd fastapi-image-search && uv run python -m unittest discover -v`
+- [x] T056 Run all mobile tests: `cd kids-app && npm test`
+
+**Checkpoint**: Devices survive APK reinstall; admin can consolidate duplicates
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
 
 - [x] T031 Run all backend tests: `cd fastapi-image-search && uv run python -m unittest discover -v`
 - [x] T032 Run all mobile tests: `cd kids-app && npm test`
@@ -126,7 +174,8 @@
 - **US1 (Phase 3)**: Depends on Phase 2 (needs analytics queries)
 - **US2 (Phase 4)**: Depends on Phase 2 (needs get_recommendations query). Independent of US1.
 - **US3 (Phase 5)**: Depends on Phase 3 (needs insights page to link from). Can start backend work after Phase 2.
-- **Polish (Phase 6)**: Depends on all user stories
+- **US4 (Phase 7)**: Stable device identity. Independent of US1-US3. Backend done, merge pending.
+- **Polish (Phase 8)**: Depends on all user stories
 
 ### User Story Dependencies
 

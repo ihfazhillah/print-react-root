@@ -954,6 +954,67 @@ async function confirmDeactivateDevice(deviceId) {
   }
 }
 
+// --- Merge devices ---
+const mergeModal = document.getElementById("mergeModal");
+
+async function openMergeModal() {
+  try {
+    const resp = await fetch("/api/admin/devices?include_inactive=true");
+    if (!resp.ok) throw new Error("Failed to load devices");
+    const devices = await resp.json();
+    const srcSelect = document.getElementById("mergeSource");
+    const tgtSelect = document.getElementById("mergeTarget");
+    const options = devices
+      .map(
+        (d) =>
+          `<option value="${d.device_id}">${d.device_name} ${d.is_active === false ? "(inactive)" : ""}</option>`,
+      )
+      .join("");
+    srcSelect.innerHTML = options;
+    tgtSelect.innerHTML = options;
+    mergeModal.classList.add("active");
+  } catch (err) {
+    showToast("Error loading devices for merge", true);
+  }
+}
+
+function closeMergeModal() {
+  mergeModal?.classList.remove("active");
+}
+
+async function handleMergeSubmit(e) {
+  e.preventDefault();
+  const sourceId = document.getElementById("mergeSource").value;
+  const targetId = document.getElementById("mergeTarget").value;
+  if (sourceId === targetId) {
+    showToast("Source and target must be different", true);
+    return;
+  }
+  if (
+    !confirm(
+      "This will move ALL activity from the source device to the target and deactivate the source. Continue?",
+    )
+  )
+    return;
+  try {
+    const resp = await fetch("/api/admin/devices/merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source_id: sourceId, target_id: targetId }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || "Merge failed");
+    }
+    const result = await resp.json();
+    showToast(`Merged ${result.merged_events} events`);
+    closeMergeModal();
+    loadDeviceTable();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
 function setupDeviceListeners() {
   document
     .getElementById("deviceModalClose")
@@ -968,6 +1029,21 @@ function setupDeviceListeners() {
   document
     .getElementById("showInactiveDevices")
     ?.addEventListener("change", loadDeviceTable);
+  document
+    .getElementById("mergeDevicesBtn")
+    ?.addEventListener("click", openMergeModal);
+  document
+    .getElementById("mergeModalClose")
+    ?.addEventListener("click", closeMergeModal);
+  document
+    .getElementById("mergeCancelBtn")
+    ?.addEventListener("click", closeMergeModal);
+  mergeModal?.addEventListener("click", (e) => {
+    if (e.target === mergeModal) closeMergeModal();
+  });
+  document
+    .getElementById("mergeForm")
+    ?.addEventListener("submit", handleMergeSubmit);
 }
 
 function showToast(message, isError = false) {

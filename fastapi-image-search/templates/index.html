@@ -82,6 +82,7 @@
                         <label style="display:flex;align-items:center;gap:8px;font-size:14px">
                             <input type="checkbox" id="showInactiveDevices"> Show inactive
                         </label>
+                        <button id="mergeDevicesBtn" class="admin-add-btn">Merge Devices</button>
                     </div>
                     <table class="admin-table" id="deviceTable">
                         <thead>
@@ -164,6 +165,27 @@
                 <div class="form-actions">
                     <button type="submit" class="admin-save-btn">Save</button>
                     <button type="button" class="admin-cancel-btn" id="deviceCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Device Merge Modal -->
+    <div class="modal" id="mergeModal">
+        <div class="modal-content admin-modal-content">
+            <span class="close" id="mergeModalClose">&times;</span>
+            <h2>Merge Devices</h2>
+            <p style="font-size:13px;color:#666;margin-bottom:12px">Move all activity from the source (duplicate) device to the target (real) device. Source will be deactivated.</p>
+            <form id="mergeForm">
+                <label>Source (duplicate)
+                    <select id="mergeSource" required></select>
+                </label>
+                <label>Target (keep)
+                    <select id="mergeTarget" required></select>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="admin-save-btn" style="background:#e74c3c">Merge</button>
+                    <button type="button" class="admin-cancel-btn" id="mergeCancelBtn">Cancel</button>
                 </div>
             </form>
         </div>

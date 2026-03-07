@@ -24,9 +24,9 @@
 
 ## R3: Personalized Recommendations Algorithm
 
-**Decision**: Query device's top N tags by print count from `activity_events` JOIN `page_tags`. Then fetch images matching those tags that the device hasn't printed yet, randomized. Computed on-the-fly per request.
+**Decision**: Query device's top 5 tags by weighted score (print=3, detail=1) from `activity_events` JOIN `page_tags`. Then fetch images matching those tags that the device hasn't printed yet, randomized. Computed on-the-fly per request.
 
-**Rationale**: At 3 kids and ~50 prints, real-time computation is instant. No recommendation engine needed.
+**Rationale**: At 3 kids and ~50 prints, real-time computation is instant. Weighting print events 3x higher than detail views ensures strong preference signals dominate while still incorporating exploratory browsing. No recommendation engine needed.
 
 **Alternatives considered**:
 - Collaborative filtering (way overkill)
@@ -57,3 +57,24 @@
 **Decision**: `GET /api/admin/devices/{device_id}/timeline` endpoint returning events in reverse chronological order grouped by date. Rendered in admin dashboard Jinja2 template.
 
 **Rationale**: Simple extension of existing activity_events queries. P2 priority — straightforward addition after core analytics.
+
+## R7: Stable Device Identity
+
+**Decision**: Use `ANDROID_ID` (via `expo-application`) as stable device identifier. Store as `android_id` column on `devices` table (nullable, unique). Registration checks for existing device by android_id before creating new one.
+
+**Rationale**: AsyncStorage is wiped on APK reinstall (side-load on Android). `ANDROID_ID` persists across reinstalls and is unique per device+signing key combination. No additional permissions required.
+
+**Alternatives considered**:
+- `expo-secure-store` (persists across reinstalls, but adds dependency and complexity)
+- Firebase Installation ID (requires Google Play Services)
+- Custom file in external storage (requires permissions)
+
+## R8: Device Record Merge
+
+**Decision**: Admin `POST /api/admin/devices/merge` endpoint. Moves all `activity_events` from source to target device, deactivates source. Simple SQL UPDATE + deactivation.
+
+**Rationale**: Duplicate device records are expected from pre-fix installs. Admin needs a way to consolidate without losing activity data.
+
+**Alternatives considered**:
+- Auto-merge on android_id collision (risky — could merge wrong devices)
+- Delete duplicates (loses activity data)

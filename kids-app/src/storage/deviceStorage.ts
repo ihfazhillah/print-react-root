@@ -5,6 +5,7 @@ const KEYS = {
   NAME: 'device:name',
   DEVICE_ID: 'device:id',
   REGISTERED: 'device:registered',
+  ANDROID_ID_LINKED: 'device:android_id_linked',
 } as const;
 
 async function getToken(): Promise<string | null> {
@@ -40,6 +41,15 @@ async function setRegistered(registered: boolean): Promise<void> {
   return AsyncStorage.setItem(KEYS.REGISTERED, String(registered));
 }
 
+async function getAndroidIdLinked(): Promise<boolean> {
+  const val = await AsyncStorage.getItem(KEYS.ANDROID_ID_LINKED);
+  return val === 'true';
+}
+
+async function setAndroidIdLinked(linked: boolean): Promise<void> {
+  return AsyncStorage.setItem(KEYS.ANDROID_ID_LINKED, String(linked));
+}
+
 async function clear(): Promise<void> {
   await AsyncStorage.multiRemove(Object.values(KEYS));
 }
@@ -53,5 +63,7 @@ export const deviceStorage = {
   setDeviceName,
   isRegistered,
   setRegistered,
+  getAndroidIdLinked,
+  setAndroidIdLinked,
   clear,
 };
