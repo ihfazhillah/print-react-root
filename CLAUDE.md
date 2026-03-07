@@ -62,8 +62,8 @@ respected in future dependency changes:
 
 ## Recent Changes
 - 007-usage-insights: Added Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite, Jinja2 (backend); @tanstack/react-query, expo-router (mobile)
+- 007-usage-insights: Added Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite, Jinja2 (backend); @tanstack/react-query, expo-router (mobile)
 - 004-tag-crud-translation: Added Python 3.10+ (existing) + FastAPI, aiosqlite (existing); deep-translator >=1.11.4 (new)
-- 003-database-layer: Added Python 3.10+ (existing) + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); aiosqlite 0.22.1 (new)
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -62,11 +62,13 @@ CREATE TABLE IF NOT EXISTS devices (
     registered_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_activity_at TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
-    is_admin INTEGER NOT NULL DEFAULT 0
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    android_id TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_devices_token ON devices(device_token);
 CREATE INDEX IF NOT EXISTS idx_devices_active ON devices(is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_android_id ON devices(android_id) WHERE android_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY,
@@ -93,6 +95,14 @@ async def init_db(db_path: str | None = None) -> None:
         try:
             await db.execute(
                 "ALTER TABLE devices ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
+            )
+        except aiosqlite.OperationalError:
+            pass  # Column already exists
+
+        # Migration: add android_id column to existing devices table
+        try:
+            await db.execute(
+                "ALTER TABLE devices ADD COLUMN android_id TEXT"
             )
         except aiosqlite.OperationalError:
             pass  # Column already exists
@@ -549,14 +559,26 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-async def register_device(db: aiosqlite.Connection, initial_name: str) -> dict[str, Any]:
-    """Register a new device. Returns device_id, device_token, device_name, registered_at."""
+async def register_device(
+    db: aiosqlite.Connection, initial_name: str, android_id: str | None = None
+) -> dict[str, Any]:
+    """Register a new device or return existing one if android_id matches.
+
+    If android_id is provided and a device with that android_id already exists,
+    returns the existing device (with a fresh token) instead of creating a new one.
+    """
+    if android_id:
+        existing = await get_device_by_android_id(db, android_id)
+        if existing:
+            return existing
+
     device_id = str(uuid.uuid4())
     device_token = secrets.token_hex(32)
     registered_at = _utcnow()
     await db.execute(
-        "INSERT INTO devices (id, device_name, device_token, registered_at) VALUES (?, ?, ?, ?)",
-        (device_id, initial_name, device_token, registered_at),
+        "INSERT INTO devices (id, device_name, device_token, registered_at, android_id) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (device_id, initial_name, device_token, registered_at, android_id),
     )
     await db.commit()
     return {
@@ -565,6 +587,42 @@ async def register_device(db: aiosqlite.Connection, initial_name: str) -> dict[s
         "device_name": initial_name,
         "registered_at": registered_at,
     }
+
+
+async def get_device_by_android_id(
+    db: aiosqlite.Connection, android_id: str
+) -> dict[str, Any] | None:
+    """Look up an active device by its android_id."""
+    async with db.execute(
+        "SELECT * FROM devices WHERE android_id = ? AND is_active = 1", (android_id,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if not row:
+        return None
+    return {
+        "device_id": row["id"],
+        "device_token": row["device_token"],
+        "device_name": row["device_name"],
+        "registered_at": row["registered_at"],
+    }
+
+
+async def link_android_id(
+    db: aiosqlite.Connection, device_id: str, android_id: str
+) -> bool:
+    """Link an android_id to an existing device. Returns True if successful."""
+    # Check if another device already has this android_id
+    async with db.execute(
+        "SELECT id FROM devices WHERE android_id = ? AND id != ?", (android_id, device_id)
+    ) as cursor:
+        conflict = await cursor.fetchone()
+    if conflict:
+        return False
+    await db.execute(
+        "UPDATE devices SET android_id = ? WHERE id = ?", (android_id, device_id)
+    )
+    await db.commit()
+    return True
 
 
 async def get_device_by_token(
@@ -668,6 +726,35 @@ async def deactivate_device(db: aiosqlite.Connection, device_id: str) -> bool:
     )
     await db.commit()
     return cursor.rowcount > 0
+
+
+async def merge_devices(
+    db: aiosqlite.Connection, source_id: str, target_id: str
+) -> int:
+    """Merge source device into target. Moves all activity_events, deactivates source.
+
+    Returns the number of events moved. Raises ValueError if source == target
+    or LookupError if either device not found.
+    """
+    if source_id == target_id:
+        raise ValueError("source_id and target_id must be different")
+
+    for did in (source_id, target_id):
+        async with db.execute("SELECT id FROM devices WHERE id = ?", (did,)) as cur:
+            if not await cur.fetchone():
+                raise LookupError(f"Device {did} not found")
+
+    cursor = await db.execute(
+        "UPDATE activity_events SET device_id = ? WHERE device_id = ?",
+        (target_id, source_id),
+    )
+    moved = cursor.rowcount
+
+    await db.execute(
+        "UPDATE devices SET is_active = 0 WHERE id = ?", (source_id,)
+    )
+    await db.commit()
+    return moved
 
 
 # ---------------------------------------------------------------------------
@@ -874,7 +961,7 @@ async def get_shared_unique_interests(db: aiosqlite.Connection) -> dict[str, Any
 async def get_recommendations(
     db: aiosqlite.Connection, device_id: str, limit: int = 20
 ) -> list[dict[str, Any]]:
-    """Images from device's top tags that the device hasn't printed, randomized."""
+    """Images from device's top tags (weighted: print=3, detail=1), randomized."""
     # Check minimum prints
     async with db.execute(
         "SELECT COUNT(*) AS cnt FROM activity_events WHERE device_id = ? AND event_type = 'print'",
@@ -884,7 +971,7 @@ async def get_recommendations(
         if row["cnt"] < 2:
             return []
 
-    # Get device's top 5 tags by print count
+    # Get device's top 5 tags by weighted score (print=3, detail=1)
     async with db.execute(
         """
         SELECT t.id AS tag_id
@@ -892,9 +979,9 @@ async def get_recommendations(
         JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
         JOIN page_tags pt ON pt.page_id = pp.id
         JOIN tags t ON t.id = pt.tag_id
-        WHERE ae.device_id = ? AND ae.event_type = 'print'
+        WHERE ae.device_id = ? AND ae.event_type IN ('print', 'detail')
         GROUP BY t.id
-        ORDER BY COUNT(*) DESC
+        ORDER BY SUM(CASE WHEN ae.event_type = 'print' THEN 3 ELSE 1 END) DESC
         LIMIT 5
         """,
         (device_id,),

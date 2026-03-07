@@ -2,6 +2,7 @@
 
 export interface DeviceRegistrationRequest {
   initial_name: string;
+  android_id?: string;
 }
 
 export interface DeviceRegistrationResponse {

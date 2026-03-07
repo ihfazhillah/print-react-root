@@ -63,5 +63,20 @@ export function createDeviceApiClient(baseUrl: string) {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
+
+    linkAndroidId(
+      deviceId: string,
+      token: string,
+      androidId: string,
+    ): Promise<{ status: string }> {
+      return request<{ status: string }>(`${baseUrl}/api/devices/${deviceId}/android-id`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ android_id: androidId }),
+      });
+    },
   };
 }

@@ -11,8 +11,12 @@
 | Column | Type | Change | Notes |
 |--------|------|--------|-------|
 | is_admin | INTEGER NOT NULL DEFAULT 0 | **NEW** | Boolean flag. 1 = exclude from analytics |
+| android_id | TEXT (nullable, unique) | **NEW** | Stable device identifier (ANDROID_ID). Persists across APK reinstalls |
 
-**Migration**: `ALTER TABLE devices ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`
+**Migrations**:
+- `ALTER TABLE devices ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`
+- `ALTER TABLE devices ADD COLUMN android_id TEXT`
+- `CREATE UNIQUE INDEX idx_devices_android_id ON devices(android_id) WHERE android_id IS NOT NULL`
 
 ### Existing Tables Used (no changes)
 

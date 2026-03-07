@@ -28,6 +28,8 @@ from db import (
     get_db,
     get_device_by_token,
     get_device_timeline,
+    link_android_id,
+    merge_devices,
     get_interactions,
     get_items,
     get_page,
@@ -123,6 +125,16 @@ class InteractionCreate(BaseModel):
 
 class DeviceRegister(BaseModel):
     initial_name: str
+    android_id: str | None = None
+
+
+class DeviceAndroidIdLink(BaseModel):
+    android_id: str
+
+
+class DeviceMerge(BaseModel):
+    source_id: str
+    target_id: str
 
 
 class DeviceNameUpdate(BaseModel):
@@ -583,12 +595,45 @@ async def _get_authenticated_device(request: Request) -> dict:
 
 @app.post("/api/devices/register", status_code=201)
 async def api_register_device(body: DeviceRegister):
-    """Register a new device and return its token."""
+    """Register a new device and return its token.
+
+    If android_id is provided and matches an existing device, returns that device
+    instead of creating a new one (stable identity across reinstalls).
+    """
     name = body.initial_name.strip()
     if not name or len(name) > 50:
         raise HTTPException(status_code=422, detail="initial_name must be 1-50 characters")
     async with get_db() as db:
-        return await register_device(db, name)
+        return await register_device(db, name, android_id=body.android_id)
+
+
+@app.patch("/api/devices/{device_id}/android-id")
+async def api_link_android_id(
+    device_id: str,
+    body: DeviceAndroidIdLink,
+    device: dict = Depends(_get_authenticated_device),
+):
+    """Link an android_id to an existing device (migration for existing installs)."""
+    if device["device_id"] != device_id:
+        raise HTTPException(status_code=403, detail="Token does not match device")
+    async with get_db() as db:
+        ok = await link_android_id(db, device_id, body.android_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail="android_id already linked to another device")
+    return {"status": "linked"}
+
+
+@app.post("/api/admin/devices/merge")
+async def api_merge_devices(body: DeviceMerge):
+    """Merge two device records. Moves all activity_events from source to target."""
+    async with get_db() as db:
+        try:
+            moved = await merge_devices(db, body.source_id, body.target_id)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        except LookupError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+    return {"merged_events": moved, "source_id": body.source_id, "target_id": body.target_id}
 
 
 @app.patch("/api/devices/{device_id}/name")

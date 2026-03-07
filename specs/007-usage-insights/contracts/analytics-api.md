@@ -118,6 +118,56 @@ Toggle `is_admin` flag on a device.
 { "device_id": "uuid", "device_name": "Babah", "is_admin": true }
 ```
 
+## Device Registration (extended)
+
+### POST /api/devices/register
+
+Existing endpoint extended with optional `android_id` field. If `android_id` is provided and matches an existing device, returns that device instead of creating a new one.
+
+**Request body**:
+```json
+{ "initial_name": "My Device", "android_id": "a1b2c3d4e5f6" }
+```
+
+`android_id` is optional for backward compatibility with older APKs.
+
+## Stable Device Identity Endpoints
+
+### PATCH /api/devices/{device_id}/android-id
+
+Link an ANDROID_ID to an existing device (migration for pre-fix installs). Requires device Bearer token.
+
+**Request body**:
+```json
+{ "android_id": "a1b2c3d4e5f6" }
+```
+
+**Response** `200 OK`:
+```json
+{ "status": "linked" }
+```
+
+**Response** `409 Conflict`: android_id already linked to another device.
+**Response** `401 Unauthorized`: Invalid/missing device token.
+**Response** `403 Forbidden`: Token does not match device_id.
+
+### POST /api/admin/devices/merge
+
+Merge two device records. Moves all activity_events from source to target, deactivates source.
+
+**Request body**:
+```json
+{ "source_id": "uuid-duplicate", "target_id": "uuid-real" }
+```
+
+**Response** `200 OK`:
+```json
+{ "merged_events": 42, "source_id": "uuid-duplicate", "target_id": "uuid-real" }
+```
+
+**Response** `404 Not Found`: Source or target device not found.
+**Response** `422 Unprocessable Entity`: source_id equals target_id.
+
 ## Mobile Personalization Endpoint
 
 ### GET /api/devices/{device_id}/recommendations

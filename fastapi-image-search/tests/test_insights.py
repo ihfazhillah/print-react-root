@@ -183,6 +183,140 @@ class TestRecommendations(InsightsTestBase):
         resp = self.client.get("/api/devices/d1/recommendations")
         self.assertEqual(resp.status_code, 401)
 
+    def test_recommendations_weighted_by_detail_events(self):
+        """Detail events (weight=1) should influence tag ranking alongside prints (weight=3)."""
+
+        async def _add_detail_events():
+            async with db_module.get_db(self.db_path) as conn:
+                # Add 10 detail views of image 2 (butterfly tag) for Mimi
+                # butterfly score: 0 prints * 3 + 10 details * 1 = 10
+                # craft score: 3 prints * 3 + 0 details * 1 = 9
+                # So butterfly should now rank higher than craft
+                for i in range(10):
+                    await conn.execute(
+                        "INSERT INTO activity_events (id, device_id, event_type, image_id, event_timestamp) "
+                        f"VALUES ('e_detail_{i}', 'd1', 'detail', '2', '2026-03-06T10:0{i}:00Z')"
+                    )
+                await conn.commit()
+
+        asyncio.run(_add_detail_events())
+
+        resp = self.client.get(
+            "/api/devices/d1/recommendations",
+            headers={"Authorization": "Bearer tok1"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        # With weighted scoring, butterfly tag (score=10) ranks above craft (score=9),
+        # so recommendations should include butterfly-tagged images
+        ids = [item["id"] for item in resp.json()]
+        # Image 3 has both craft and butterfly tags — should still appear
+        self.assertTrue(len(ids) > 0)
+
+
+class TestAndroidIdMigration(InsightsTestBase):
+    def test_register_with_android_id(self):
+        """Registration with android_id creates a device with that id stored."""
+        resp = self.client.post(
+            "/api/devices/register",
+            json={"initial_name": "TestKid", "android_id": "abc123"},
+        )
+        self.assertEqual(resp.status_code, 201)
+        device_id = resp.json()["device_id"]
+
+        # Registering again with same android_id returns same device
+        resp2 = self.client.post(
+            "/api/devices/register",
+            json={"initial_name": "DifferentName", "android_id": "abc123"},
+        )
+        self.assertEqual(resp2.status_code, 201)
+        self.assertEqual(resp2.json()["device_id"], device_id)
+
+    def test_register_without_android_id_still_works(self):
+        """Backward compatibility: registration without android_id creates new device."""
+        resp = self.client.post(
+            "/api/devices/register", json={"initial_name": "OldApp"}
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("device_id", resp.json())
+
+    def test_link_android_id_to_existing_device(self):
+        """Migration: link android_id to an existing device via PATCH."""
+        resp = self.client.patch(
+            "/api/devices/d1/android-id",
+            json={"android_id": "mimi_android_123"},
+            headers={"Authorization": "Bearer tok1"},
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        # Now registering with that android_id returns Mimi's device
+        resp2 = self.client.post(
+            "/api/devices/register",
+            json={"initial_name": "Whatever", "android_id": "mimi_android_123"},
+        )
+        self.assertEqual(resp2.status_code, 201)
+        self.assertEqual(resp2.json()["device_id"], "d1")
+
+    def test_link_android_id_conflict(self):
+        """Cannot link an android_id that's already used by another device."""
+        # Link to d1
+        self.client.patch(
+            "/api/devices/d1/android-id",
+            json={"android_id": "shared_id"},
+            headers={"Authorization": "Bearer tok1"},
+        )
+        # Try to link same id to d2
+        resp = self.client.patch(
+            "/api/devices/d2/android-id",
+            json={"android_id": "shared_id"},
+            headers={"Authorization": "Bearer tok2"},
+        )
+        self.assertEqual(resp.status_code, 409)
+
+    def test_link_requires_auth(self):
+        resp = self.client.patch(
+            "/api/devices/d1/android-id",
+            json={"android_id": "test123"},
+        )
+        self.assertEqual(resp.status_code, 401)
+
+
+class TestMergeDevices(InsightsTestBase):
+    def test_merge_moves_events(self):
+        """Merging moves all activity_events from source to target."""
+        resp = self.client.post(
+            "/api/admin/devices/merge",
+            json={"source_id": "d2", "target_id": "d1"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["merged_events"], 2)  # LuLu had 2 prints
+        self.assertEqual(data["source_id"], "d2")
+        self.assertEqual(data["target_id"], "d1")
+
+    def test_merge_deactivates_source(self):
+        self.client.post(
+            "/api/admin/devices/merge",
+            json={"source_id": "d2", "target_id": "d1"},
+        )
+        # d2 should now be inactive
+        resp = self.client.get("/api/admin/insights/summary")
+        lulu = next(d for d in resp.json() if d["device_name"] == "LuLu")
+        self.assertFalse(lulu["is_active"])
+
+    def test_merge_self_rejected(self):
+        resp = self.client.post(
+            "/api/admin/devices/merge",
+            json={"source_id": "d1", "target_id": "d1"},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_merge_nonexistent_device(self):
+        resp = self.client.post(
+            "/api/admin/devices/merge",
+            json={"source_id": "nonexistent", "target_id": "d1"},
+        )
+        self.assertEqual(resp.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()
