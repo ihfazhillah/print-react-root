@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { Stack } from 'expo-router';
 import * as Network from 'expo-network';
@@ -60,15 +60,17 @@ export default function RootLayout() {
         <ApiClientProvider>
           <UpdateProvider>
             <DeviceAutoRegister />
-            <UpdateBar />
-            <Stack
-              screenOptions={{
-                headerTitle: 'KM Kraft',
-                headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.textPrimary,
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
+            <View style={{ flex: 1 }}>
+              <Stack
+                screenOptions={{
+                  headerTitle: 'KM Kraft',
+                  headerStyle: { backgroundColor: colors.surface },
+                  headerTintColor: colors.textPrimary,
+                  contentStyle: { backgroundColor: colors.background },
+                }}
+              />
+              <UpdateBar />
+            </View>
           </UpdateProvider>
         </ApiClientProvider>
       </QueryClientProvider>

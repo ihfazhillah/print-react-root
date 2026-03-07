@@ -33,7 +33,8 @@ export default function SettingsScreen() {
   const [saved, setSaved] = useState(false);
 
   const { deviceName, syncStatus, syncError, saveName } = useDeviceSettings();
-  const { checkForUpdate, checking } = useUpdate();
+  const { checkForUpdate, checking, updateInfo, downloadState, startDownload, installUpdate } =
+    useUpdate();
   const [updateMsg, setUpdateMsg] = useState('');
   const [nameInput, setNameInput] = useState('');
 
@@ -195,29 +196,64 @@ export default function SettingsScreen() {
 
           <Text style={styles.sectionTitle}>Updates</Text>
 
-          <Pressable
-            style={[styles.saveButton, checking && styles.disabledButton]}
-            onPress={async () => {
-              setUpdateMsg('');
-              const result = await checkForUpdate();
-              if (result?.isUpdateAvailable) {
-                setUpdateMsg(`Update available: v${result.latestVersion}`);
-              } else {
-                setUpdateMsg(result ? "You're up to date!" : 'Could not check for updates');
-              }
-            }}
-            disabled={checking}
-            accessibilityRole="button"
-            accessibilityLabel="Check for updates"
-          >
-            <Text style={styles.saveButtonText}>
-              {checking ? 'Checking...' : 'Check for Updates'}
-            </Text>
-          </Pressable>
+          {downloadState.status === 'downloading' ? (
+            <Pressable style={styles.saveButton} disabled accessibilityRole="button">
+              <Text style={styles.saveButtonText}>
+                Downloading... {Math.round(downloadState.progress * 100)}%
+              </Text>
+            </Pressable>
+          ) : downloadState.status === 'ready' ? (
+            <Pressable
+              style={styles.saveButton}
+              onPress={installUpdate}
+              accessibilityRole="button"
+              accessibilityLabel="Install update"
+            >
+              <Text style={styles.saveButtonText}>Install Update</Text>
+            </Pressable>
+          ) : updateInfo?.isUpdateAvailable ? (
+            <Pressable
+              style={styles.saveButton}
+              onPress={startDownload}
+              accessibilityRole="button"
+              accessibilityLabel="Download update"
+            >
+              <Text style={styles.saveButtonText}>
+                Download v{updateInfo.latestVersion}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.saveButton, checking && styles.disabledButton]}
+              onPress={async () => {
+                setUpdateMsg('');
+                const result = await checkForUpdate();
+                if (result?.isUpdateAvailable) {
+                  setUpdateMsg(`Update available: v${result.latestVersion}`);
+                } else {
+                  setUpdateMsg(
+                    result
+                      ? `You're up to date! (v${result.currentVersion})`
+                      : 'Could not check for updates',
+                  );
+                }
+              }}
+              disabled={checking}
+              accessibilityRole="button"
+              accessibilityLabel="Check for updates"
+            >
+              <Text style={styles.saveButtonText}>
+                {checking ? 'Checking...' : 'Check for Updates'}
+              </Text>
+            </Pressable>
+          )}
           {updateMsg !== '' && (
             <Text style={updateMsg.includes('available') ? styles.hint : styles.success}>
               {updateMsg}
             </Text>
+          )}
+          {downloadState.status === 'error' && downloadState.error && (
+            <Text style={styles.error}>{downloadState.error}</Text>
           )}
         </ScrollView>
       </KeyboardAvoidingView>

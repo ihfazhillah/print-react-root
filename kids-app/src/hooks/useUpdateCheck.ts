@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import type { UpdateInfo, DownloadState } from '../types/update';
 
-const GITHUB_TAGS_URL = 'https://github.com/ihfazhillah/print-react-root/tags';
+const GITHUB_API_TAGS_URL = 'https://api.github.com/repos/ihfazhillah/print-react-root/tags';
 const GITHUB_DOWNLOAD_BASE = 'https://github.com/ihfazhillah/print-react-root/releases/download';
 const APK_FILENAME = 'app-release.apk';
-const TAG_PATTERN = /\/releases\/tag\/v(\d+\.\d+\.\d+)/g;
+const VERSION_PATTERN = /^v(\d+\.\d+\.\d+)$/;
 
 /**
  * Compare two semver strings (X.Y.Z). Returns true if remote > local.
@@ -46,23 +46,21 @@ export function useUpdateCheck() {
   const checkForUpdate = useCallback(async (): Promise<UpdateInfo | null> => {
     setChecking(true);
     try {
-      const response = await fetch(GITHUB_TAGS_URL);
+      const response = await fetch(GITHUB_API_TAGS_URL);
       if (!response.ok) {
         setChecking(false);
         return null;
       }
-      const html = await response.text();
+      const tags: { name: string }[] = await response.json();
 
       const versions: string[] = [];
-      let match: RegExpExecArray | null;
-      while ((match = TAG_PATTERN.exec(html)) !== null) {
-        versions.push(match[1]);
+      for (const tag of tags) {
+        const match = VERSION_PATTERN.exec(tag.name);
+        if (match) versions.push(match[1]);
       }
-      // Reset regex lastIndex for future calls
-      TAG_PATTERN.lastIndex = 0;
 
       const latestVersion = findLatestVersion(versions);
-      const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
+      const currentVersion = Constants.expoConfig?.version ?? '0.0.0';
 
       if (latestVersion && isNewerVersion(latestVersion, currentVersion)) {
         const info: UpdateInfo = {
@@ -77,15 +75,16 @@ export function useUpdateCheck() {
         return info;
       }
 
-      setUpdateInfo({
+      const info: UpdateInfo = {
         latestVersion: latestVersion ?? currentVersion,
         currentVersion,
         isUpdateAvailable: false,
         downloadUrl: null,
-      });
+      };
+      setUpdateInfo(info);
       setDownloadState({ status: 'idle', progress: 0, error: null });
       setChecking(false);
-      return null;
+      return info;
     } catch {
       // Offline or error — silently skip
       setChecking(false);

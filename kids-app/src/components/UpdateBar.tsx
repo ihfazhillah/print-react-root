@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { usePathname } from 'expo-router';
 import { useUpdate } from '../context/UpdateContext';
 import { colors } from '../theme';
 
 export function UpdateBar() {
+  const pathname = usePathname();
   const { updateInfo, downloadState, startDownload, cancelDownload, installUpdate } = useUpdate();
 
   // Auto-install when download completes
@@ -13,6 +15,8 @@ export function UpdateBar() {
     }
   }, [downloadState.status, installUpdate]);
 
+  // Hide on settings screen — it has its own update controls
+  if (pathname === '/settings') return null;
   if (downloadState.status === 'idle') return null;
 
   const progressPercent = Math.round(downloadState.progress * 100);

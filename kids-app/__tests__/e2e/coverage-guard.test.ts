@@ -58,6 +58,21 @@ const REQUIRED_E2E_COVERAGE = [
     file: 'us7-activity-tracking.test.tsx',
     scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4', 'AS-5'],
   },
+  {
+    story: 'US-Update-1 — Check for Updates Automatically',
+    file: 'us-update.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3'],
+  },
+  {
+    story: 'US-Update-2 — Download and Install Update',
+    file: 'us-update.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3'],
+  },
+  {
+    story: 'US-Update-3 — Manual Update Check',
+    file: 'us-update.test.tsx',
+    scenarios: ['AS-1', 'AS-2'],
+  },
 ];
 
 describe('E2E coverage guard', () => {
