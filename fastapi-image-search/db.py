@@ -68,7 +68,6 @@ CREATE TABLE IF NOT EXISTS devices (
 
 CREATE INDEX IF NOT EXISTS idx_devices_token ON devices(device_token);
 CREATE INDEX IF NOT EXISTS idx_devices_active ON devices(is_active);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_android_id ON devices(android_id) WHERE android_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY,
@@ -106,6 +105,10 @@ async def init_db(db_path: str | None = None) -> None:
             )
         except aiosqlite.OperationalError:
             pass  # Column already exists
+        await db.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_android_id "
+            "ON devices(android_id) WHERE android_id IS NOT NULL"
+        )
 
         # Migration: add id_translation column to existing tags table
         try:
