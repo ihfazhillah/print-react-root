@@ -11,6 +11,19 @@ jest.mock('expo-router', () => ({
   },
 }));
 
+// Mock useUpdate
+jest.mock('../../src/context/UpdateContext', () => ({
+  useUpdate: () => ({
+    checkForUpdate: jest.fn().mockResolvedValue(null),
+    checking: false,
+    updateInfo: null,
+    downloadState: { status: 'idle', progress: 0, error: null },
+    startDownload: jest.fn(),
+    cancelDownload: jest.fn(),
+    installUpdate: jest.fn(),
+  }),
+}));
+
 // Mock useServerConfig
 const mockUpdateConfig = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../src/hooks/useServerConfig', () => ({

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { Stack } from 'expo-router';
 import * as Network from 'expo-network';
@@ -12,6 +12,8 @@ import {
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
 import { ServerConfigProvider } from '../src/context/ServerConfigContext';
 import { useDeviceRegistration } from '../src/hooks/useDeviceRegistration';
+import { UpdateProvider } from '../src/context/UpdateContext';
+import { UpdateBar } from '../src/components/UpdateBar';
 import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
@@ -56,15 +58,20 @@ export default function RootLayout() {
     <ServerConfigProvider>
       <QueryClientProvider client={queryClient}>
         <ApiClientProvider>
-          <DeviceAutoRegister />
-          <Stack
-            screenOptions={{
-              headerTitle: 'KM Kraft',
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.textPrimary,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          />
+          <UpdateProvider>
+            <DeviceAutoRegister />
+            <View style={{ flex: 1 }}>
+              <Stack
+                screenOptions={{
+                  headerTitle: 'KM Kraft',
+                  headerStyle: { backgroundColor: colors.surface },
+                  headerTintColor: colors.textPrimary,
+                  contentStyle: { backgroundColor: colors.background },
+                }}
+              />
+              <UpdateBar />
+            </View>
+          </UpdateProvider>
         </ApiClientProvider>
       </QueryClientProvider>
     </ServerConfigProvider>

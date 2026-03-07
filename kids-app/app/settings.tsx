@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useServerConfig } from '../src/hooks/useServerConfig';
 import { useDeviceSettings } from '../src/hooks/useDeviceSettings';
+import { useUpdate } from '../src/context/UpdateContext';
 import { colors } from '../src/theme';
 
 const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -23,6 +33,9 @@ export default function SettingsScreen() {
   const [saved, setSaved] = useState(false);
 
   const { deviceName, syncStatus, syncError, saveName } = useDeviceSettings();
+  const { checkForUpdate, checking, updateInfo, downloadState, startDownload, installUpdate } =
+    useUpdate();
+  const [updateMsg, setUpdateMsg] = useState('');
   const [nameInput, setNameInput] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -93,7 +106,11 @@ export default function SettingsScreen() {
         >
           <Text style={styles.sectionTitle}>Device</Text>
 
-          <View onLayout={(e) => { fieldY.current.deviceName = e.nativeEvent.layout.y; }}>
+          <View
+            onLayout={(e) => {
+              fieldY.current.deviceName = e.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.label}>Device Name</Text>
             <TextInput
               style={styles.input}
@@ -121,7 +138,11 @@ export default function SettingsScreen() {
 
           <Text style={styles.sectionTitle}>Server</Text>
 
-          <View onLayout={(e) => { fieldY.current.ip = e.nativeEvent.layout.y; }}>
+          <View
+            onLayout={(e) => {
+              fieldY.current.ip = e.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.label}>Server IP Address</Text>
             <TextInput
               style={styles.input}
@@ -140,7 +161,11 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View onLayout={(e) => { fieldY.current.port = e.nativeEvent.layout.y; }}>
+          <View
+            onLayout={(e) => {
+              fieldY.current.port = e.nativeEvent.layout.y;
+            }}
+          >
             <Text style={styles.label}>Port (optional)</Text>
             <TextInput
               style={styles.input}
@@ -168,6 +193,68 @@ export default function SettingsScreen() {
           >
             <Text style={styles.saveButtonText}>Save</Text>
           </Pressable>
+
+          <Text style={styles.sectionTitle}>Updates</Text>
+
+          {downloadState.status === 'downloading' ? (
+            <Pressable style={styles.saveButton} disabled accessibilityRole="button">
+              <Text style={styles.saveButtonText}>
+                Downloading... {Math.round(downloadState.progress * 100)}%
+              </Text>
+            </Pressable>
+          ) : downloadState.status === 'ready' ? (
+            <Pressable
+              style={styles.saveButton}
+              onPress={installUpdate}
+              accessibilityRole="button"
+              accessibilityLabel="Install update"
+            >
+              <Text style={styles.saveButtonText}>Install Update</Text>
+            </Pressable>
+          ) : updateInfo?.isUpdateAvailable ? (
+            <Pressable
+              style={styles.saveButton}
+              onPress={startDownload}
+              accessibilityRole="button"
+              accessibilityLabel="Download update"
+            >
+              <Text style={styles.saveButtonText}>
+                Download v{updateInfo.latestVersion}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.saveButton, checking && styles.disabledButton]}
+              onPress={async () => {
+                setUpdateMsg('');
+                const result = await checkForUpdate();
+                if (result?.isUpdateAvailable) {
+                  setUpdateMsg(`Update available: v${result.latestVersion}`);
+                } else {
+                  setUpdateMsg(
+                    result
+                      ? `You're up to date! (v${result.currentVersion})`
+                      : 'Could not check for updates',
+                  );
+                }
+              }}
+              disabled={checking}
+              accessibilityRole="button"
+              accessibilityLabel="Check for updates"
+            >
+              <Text style={styles.saveButtonText}>
+                {checking ? 'Checking...' : 'Check for Updates'}
+              </Text>
+            </Pressable>
+          )}
+          {updateMsg !== '' && (
+            <Text style={updateMsg.includes('available') ? styles.hint : styles.success}>
+              {updateMsg}
+            </Text>
+          )}
+          {downloadState.status === 'error' && downloadState.error && (
+            <Text style={styles.error}>{downloadState.error}</Text>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </>
@@ -229,6 +316,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 24,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   saveButtonText: {
     color: colors.textOnPrimary,

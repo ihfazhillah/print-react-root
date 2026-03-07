@@ -10,6 +10,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-21
 - Python 3.10+ (existing) + FastAPI, aiosqlite (existing); deep-translator >=1.11.4 (new) (004-tag-crud-translation)
 - SQLite via aiosqlite (existing `printable_pages.db`) (004-tag-crud-translation)
 - Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite, Jinja2 (backend); @tanstack/react-query, expo-router (mobile) (007-usage-insights)
+- TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo-file-system (existing), expo-intent-launcher (new), expo-application (new) (006-in-app-update)
+- N/A (ephemeral state only, APK cached in `FileSystem.cacheDirectory`) (006-in-app-update)
 
 - TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8 (001-kids-mobile-app)
 
@@ -62,6 +64,7 @@ respected in future dependency changes:
 
 ## Recent Changes
 - 007-usage-insights: Added Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite, Jinja2 (backend); @tanstack/react-query, expo-router (mobile)
+- 006-in-app-update: Added TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo-file-system (existing), expo-intent-launcher (new), expo-application (new)
 - 004-tag-crud-translation: Added Python 3.10+ (existing) + FastAPI, aiosqlite (existing); deep-translator >=1.11.4 (new)
 - 003-database-layer: Added Python 3.10+ (existing) + FastAPI, httpx, BeautifulSoup4, Jinja2, uvicorn (existing); aiosqlite 0.22.1 (new)
 
