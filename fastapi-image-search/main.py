@@ -1,15 +1,10 @@
-import base64
 import logging
-import os
-import subprocess
-import tempfile
 from collections import OrderedDict
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import aiosqlite
 import httpx
-from bs4 import BeautifulSoup
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -50,6 +45,7 @@ from db import (
     update_page,
     update_tag,
 )
+from print_handlers import get_print_handler
 from printer import get_printer_service
 
 log = logging.getLogger(__name__)
@@ -478,50 +474,6 @@ async def api_insights_interests():
 # ---------------------------------------------------------------------------
 
 
-async def fetch_krokotak_page(url: str) -> str:
-    """Fetch krokotak _print page and return base64 image string"""
-    # Transform /print to /_print
-    print_url = url.replace("/print?", "/_print?")
-
-    # Fetch page
-    async with httpx.AsyncClient(verify=False) as client:
-        response = await client.get(print_url)
-        response.raise_for_status()
-        html = response.text
-
-    # Parse HTML and find first img tag
-    soup = BeautifulSoup(html, "html.parser")
-    img_tag = soup.find("img")
-
-    if not img_tag or not img_tag.get("src"):
-        raise ValueError("No image found in page")
-
-    # Extract base64 data
-    img_src = img_tag["src"]
-    if not img_src.startswith("data:image"):
-        raise ValueError("Invalid image data format")
-
-    return img_src
-
-
-def convert_to_png(image_bytes: bytes) -> bytes:
-    """Convert webp image bytes to PNG using ImageMagick"""
-    with tempfile.NamedTemporaryFile(suffix=".webp", delete=False) as temp_file:
-        temp_file.write(image_bytes)
-        temp_path = temp_file.name
-
-    png_path = temp_path.replace(".webp", ".png")
-    subprocess.run(["convert", temp_path, png_path], check=True)
-
-    with open(png_path, "rb") as f:
-        png_bytes = f.read()
-
-    os.unlink(temp_path)
-    os.unlink(png_path)
-
-    return png_bytes
-
-
 _image_cache: OrderedDict[str, tuple] = OrderedDict()
 _image_cache_bytes = 0
 IMAGE_CACHE_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
@@ -557,21 +509,14 @@ async def proxy_image(url: str):
 
 @app.get("/api/print-image")
 async def get_print_image(url: str):
-    """Get print image by scraping krokotak _print page and send to printer"""
+    """Fetch printable PNG from any supported source and send to printer."""
     try:
-        img_src = await fetch_krokotak_page(url)
-
-        header, base64_data = img_src.split(",", 1)
-        image_bytes = base64.b64decode(base64_data)
-
-        png_bytes = convert_to_png(image_bytes)
-
+        handler = get_print_handler(url)
+        png_bytes = await handler.get_printable_png(url)
         result = await printer_service.print_image(png_bytes)
-
         return {"status": result.status, "message": result.message}
-
     except Exception as e:
-        print(f"Error fetching print image: {e}")
+        log.error(f"Error printing {url}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

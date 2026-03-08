@@ -12,3 +12,8 @@ dependencies = [
     "aiosqlite>=0.22.1",
     "deep-translator>=1.11.4",
 ]
+
+[project.optional-dependencies]
+scraper = [
+    "playwright>=1.40.0",
+]

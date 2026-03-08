@@ -92,7 +92,7 @@ def _insert_page(
 
     # Insert tags
     for search in entry.get("searches", []):
-        tag_text = search.get("text", "").strip()
+        tag_text = search.get("text", "").strip().lower()
         if not tag_text:
             continue
         tag_link = search.get("link")
@@ -163,11 +163,12 @@ def main():
     parser = argparse.ArgumentParser(description="Seed printable pages database from JSON")
     parser.add_argument("--data", default=DEFAULT_DATA, help="Path to data.json")
     parser.add_argument("--db", default=DEFAULT_DB, help="Path to SQLite database file")
+    parser.add_argument("--source", default="krokotak", help="Source identifier (e.g. mondaymandala, crayola)")
     args = parser.parse_args()
 
-    log.info(f"Seeding from {args.data} into {args.db}...")
+    log.info(f"Seeding from {args.data} into {args.db} (source={args.source})...")
     start = time.time()
-    stats = seed(args.data, args.db)
+    stats = seed(args.data, args.db, source=args.source)
     elapsed = time.time() - start
 
     log.info(

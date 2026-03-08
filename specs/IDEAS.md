@@ -36,6 +36,10 @@ Based on 3 days of data: 3 kids, 414 events, 53 prints, 17 unique images printed
 
 - **Print queue** — Instead of one-at-a-time printing, let kids pick multiple images and print batch.
 
+### Out of Scope (from 008-scrape-coloring-sites)
+
+- **Server-generated instruction sheets for non-printable crafts** — Some craft sites have step-by-step tutorials (video/photo) that aren't printable. Idea: auto-generate a printable "instruction card" (PDF/image) server-side from the craft steps, so kids can follow along on paper. This would expand the printable catalog beyond what sources natively offer as PDFs/images. Could use Jinja2 templates or server-side rendering.
+
 ## Feature Pipeline Status
 
 | # | Feature | Status |
