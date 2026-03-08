@@ -1,6 +1,7 @@
 import type {
   ApiError,
   Device,
+  DeviceSummary,
   InterestsResult,
   MergeResult,
   Page,
@@ -12,9 +13,9 @@ import type {
   TagUpdate,
   TimelineDay,
   TopImagesResult,
+  TopTagEntry,
   TopTagsResult,
   TranslationResult,
-  InsightsSummary,
 } from '../types/api';
 
 export class ApiRequestError extends Error {
@@ -59,7 +60,7 @@ export interface AdminApiClient {
   mergeDevices(sourceId: string, targetId: string): Promise<MergeResult>;
 
   // Insights
-  getInsightsSummary(): Promise<InsightsSummary>;
+  getInsightsSummary(): Promise<DeviceSummary[]>;
   getTopTags(limit?: number): Promise<TopTagsResult>;
   getTopImages(limit?: number): Promise<TopImagesResult>;
   getDeviceTimeline(deviceId: string, limit?: number, offset?: number): Promise<TimelineDay[]>;
@@ -101,7 +102,9 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
         `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
       ),
 
-    getTopTagNames: (limit = 10) => request<string[]>(`${baseUrl}/api/tags?limit=${limit}`),
+    getTopTagNames: (limit = 10) =>
+      request<Array<{ id: number; name: string; id_translation: string }>>(`${baseUrl}/api/tags?limit=${limit}`)
+        .then((tags) => tags.map((t) => t.name)),
 
     // Page CRUD
     createPage: (data) => request<Page>(`${baseUrl}/api/pages`, json('POST', data)),
@@ -168,10 +171,16 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
 
     // Insights
     getInsightsSummary: () =>
-      request<InsightsSummary>(`${baseUrl}/api/admin/insights/summary`),
+      request<DeviceSummary[]>(`${baseUrl}/api/admin/insights/summary`),
 
     getTopTags: (limit = 5) =>
-      request<TopTagsResult>(`${baseUrl}/api/admin/insights/top-tags?limit=${limit}`),
+      request<Array<{ device_id: string; device_name: string; top_tags: TopTagEntry[] }>>(
+        `${baseUrl}/api/admin/insights/top-tags?limit=${limit}`,
+      ).then((arr) => {
+        const result: TopTagsResult = {};
+        for (const item of arr) result[item.device_id] = item.top_tags;
+        return result;
+      }),
 
     getTopImages: (limit = 10) =>
       request<TopImagesResult>(`${baseUrl}/api/admin/insights/top-images?limit=${limit}`),

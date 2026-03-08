@@ -55,7 +55,7 @@ export function DevicesPage() {
 
   const columns = [
     col.accessor('device_name', { header: 'Name' }),
-    col.accessor('id', {
+    col.accessor('device_id', {
       header: 'Device ID',
       cell: ({ getValue }) => <code style={{ fontSize: '0.75rem', color: '#64748b' }}>{getValue().substring(0, 16)}…</code>,
     }),
@@ -73,7 +73,7 @@ export function DevicesPage() {
         <input
           type="checkbox"
           checked={row.original.is_admin}
-          onChange={(e) => adminMut.mutate({ id: row.original.id, isAdmin: e.target.checked })}
+          onChange={(e) => adminMut.mutate({ id: row.original.device_id, isAdmin: e.target.checked })}
           style={{ width: 'auto' }}
         />
       ),
@@ -120,7 +120,7 @@ export function DevicesPage() {
         <RenameModal
           device={renameTarget}
           onClose={() => setRenameTarget(null)}
-          onSubmit={(name) => renameMut.mutate({ id: renameTarget.id, name })}
+          onSubmit={(name) => renameMut.mutate({ id: renameTarget.device_id, name })}
           isLoading={renameMut.isPending}
         />
       )}
@@ -131,7 +131,7 @@ export function DevicesPage() {
         title="Deactivate Device"
         message={`Deactivate "${deactivateTarget?.device_name}"? This will prevent the device from tracking activity.`}
         confirmLabel="Deactivate"
-        onConfirm={() => deactivateTarget && deactivateMut.mutate(deactivateTarget.id)}
+        onConfirm={() => deactivateTarget && deactivateMut.mutate(deactivateTarget.device_id)}
         onCancel={() => setDeactivateTarget(null)}
         isLoading={deactivateMut.isPending}
       />
@@ -201,14 +201,14 @@ function MergeModal({ open, devices, onClose, onSubmit, isLoading }: {
           <label>Source device (will be merged away)</label>
           <select value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
             <option value="">Select source…</option>
-            {devices.map((d) => <option key={d.id} value={d.id}>{d.device_name}</option>)}
+            {devices.map((d) => <option key={d.device_id} value={d.device_id}>{d.device_name}</option>)}
           </select>
         </div>
         <div className="form-group">
           <label>Target device (keeps all activity)</label>
           <select value={targetId} onChange={(e) => setTargetId(e.target.value)}>
             <option value="">Select target…</option>
-            {devices.map((d) => <option key={d.id} value={d.id}>{d.device_name}</option>)}
+            {devices.map((d) => <option key={d.device_id} value={d.device_id}>{d.device_name}</option>)}
           </select>
         </div>
         {error && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: '0 0 12px' }}>{error}</p>}

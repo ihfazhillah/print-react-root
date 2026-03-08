@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useAdminApiClient } from '../api/apiClientContext';
+import type { DeviceSummary } from '../types/api';
 
 export function InsightsPage() {
   const client = useAdminApiClient();
@@ -30,7 +31,7 @@ export function InsightsPage() {
 
   if (isLoading) return <div style={{ color: '#94a3b8', padding: 32 }}>Loading insights…</div>;
 
-  const devices = summaryQuery.data?.devices ?? [];
+  const devices: DeviceSummary[] = summaryQuery.data ?? [];
   const topImages = topImagesQuery.data?.top_images ?? [];
   const shared = interestsQuery.data?.shared ?? [];
 
@@ -53,9 +54,9 @@ export function InsightsPage() {
             >
               <div style={{ fontWeight: 600, marginBottom: 12 }}>{d.device_name}</div>
               <div style={{ display: 'flex', gap: 16, fontSize: '0.85rem', color: '#64748b' }}>
-                <span>👁️ {d.views}</span>
-                <span>🔍 {d.details}</span>
-                <span>🖨️ {d.prints}</span>
+                <span>👁️ {d.total_views}</span>
+                <span>🔍 {d.total_details}</span>
+                <span>🖨️ {d.total_prints}</span>
               </div>
               {topTagsQuery.data?.[d.device_id] && (
                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -103,7 +104,7 @@ export function InsightsPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {shared.map((s) => (
                 <div key={s.tag_name} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 14px' }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#15803d' }}>{s.id_translation || s.tag_name}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#15803d' }}>{s.tag_name}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>{s.devices.length} children</div>
                 </div>
               ))}

@@ -52,25 +52,20 @@ export interface TagUpdate {
 
 // Device
 export interface Device {
-  id: string;
+  device_id: string;
   device_name: string;
   registered_at: string;
   is_active: boolean;
   is_admin: boolean;
-  android_id: string | null;
 }
 
 // Insights
 export interface DeviceSummary {
   device_id: string;
   device_name: string;
-  views: number;
-  details: number;
-  prints: number;
-}
-
-export interface InsightsSummary {
-  devices: DeviceSummary[];
+  total_views: number;
+  total_details: number;
+  total_prints: number;
 }
 
 export interface TopTagEntry {
@@ -109,7 +104,6 @@ export interface TimelineDay {
 
 export interface InterestEntry {
   tag_name: string;
-  id_translation: string;
   devices: string[];
 }
 

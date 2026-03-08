@@ -3,10 +3,10 @@ import { Link, useLocation } from '@tanstack/react-router';
 import styles from './Layout.module.css';
 
 const NAV_ITEMS = [
-  { to: '/admin', label: '📄 Pages', exact: true },
-  { to: '/admin/tags', label: '🏷️ Tags' },
-  { to: '/admin/devices', label: '📱 Devices' },
-  { to: '/admin/insights', label: '📊 Insights' },
+  { to: '/', label: '📄 Pages', exact: true },
+  { to: '/tags', label: '🏷️ Tags' },
+  { to: '/devices', label: '📱 Devices' },
+  { to: '/insights', label: '📊 Insights' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -22,9 +22,10 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
         <nav className={styles.nav}>
           {NAV_ITEMS.map(({ to, label, exact }) => {
-            const active = exact
-              ? location.pathname === to
-              : location.pathname.startsWith(to);
+            const fullPath = to === '/' ? '/admin' : `/admin${to}`;
+          const active = exact
+              ? location.pathname === fullPath || location.pathname === '/admin/'
+              : location.pathname.startsWith(fullPath);
             return (
               <Link
                 key={to}
