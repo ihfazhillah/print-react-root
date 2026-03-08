@@ -28,6 +28,7 @@ from db import (
     merge_devices,
     get_interactions,
     get_items,
+    get_personalized_items,
     get_page,
     get_recommendations,
     get_related,
@@ -160,10 +161,12 @@ async def root(request: Request):
 
 
 @app.get("/api/items")
-async def api_get_items(skip: int = 0, limit: int = 20):
-    """Get collections and prints with pagination"""
+async def api_get_items(skip: int = 0, limit: int = 20, device_id: str | None = None):
+    """Get collections and prints with pagination. Pass device_id for personalized ordering."""
     try:
         async with get_db() as db:
+            if device_id:
+                return await get_personalized_items(db, device_id, skip, limit)
             return await get_items(db, skip, limit)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")

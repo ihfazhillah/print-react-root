@@ -809,6 +809,21 @@ async def merge_devices(
             if not await cur.fetchone():
                 raise LookupError(f"Device {did} not found")
 
+    # Copy android_id from source to target if target doesn't have one
+    async with db.execute(
+        "SELECT android_id FROM devices WHERE id = ?", (source_id,)
+    ) as cur:
+        source_row = await cur.fetchone()
+    async with db.execute(
+        "SELECT android_id FROM devices WHERE id = ?", (target_id,)
+    ) as cur:
+        target_row = await cur.fetchone()
+    if source_row and source_row["android_id"] and (not target_row or not target_row["android_id"]):
+        await db.execute(
+            "UPDATE devices SET android_id = ? WHERE id = ?",
+            (source_row["android_id"], target_id),
+        )
+
     cursor = await db.execute(
         "UPDATE activity_events SET device_id = ? WHERE device_id = ?",
         (target_id, source_id),
@@ -1023,61 +1038,238 @@ async def get_shared_unique_interests(db: aiosqlite.Connection) -> dict[str, Any
     }
 
 
-async def get_recommendations(
-    db: aiosqlite.Connection, device_id: str, limit: int = 20
-) -> list[dict[str, Any]]:
-    """Images from device's top tags (weighted: print=3, detail=1), randomized."""
-    # Check minimum prints
-    async with db.execute(
-        "SELECT COUNT(*) AS cnt FROM activity_events WHERE device_id = ? AND event_type = 'print'",
-        (device_id,),
-    ) as cursor:
-        row = await cursor.fetchone()
-        if row["cnt"] < 2:
-            return []
+async def compute_tag_affinity(
+    db: aiosqlite.Connection, device_id: str, limit: int = 10
+) -> list[tuple[int, float]]:
+    """Compute tag affinity scores for a device. Returns [(tag_id, score), ...] sorted by score DESC.
 
-    # Get device's top 5 tags by weighted score (print=3, detail=1)
+    Weights: print=3, detail=2, view=1.
+    """
     async with db.execute(
         """
-        SELECT t.id AS tag_id
+        SELECT t.id AS tag_id,
+               SUM(CASE ae.event_type
+                   WHEN 'print' THEN 3
+                   WHEN 'detail' THEN 2
+                   ELSE 1
+               END) AS score
         FROM activity_events ae
         JOIN printable_pages pp ON pp.id = CAST(ae.image_id AS INTEGER)
         JOIN page_tags pt ON pt.page_id = pp.id
         JOIN tags t ON t.id = pt.tag_id
-        WHERE ae.device_id = ? AND ae.event_type IN ('print', 'detail')
+        WHERE ae.device_id = ?
+          AND ae.image_id IS NOT NULL
+          AND t.blocked = 0
         GROUP BY t.id
-        ORDER BY SUM(CASE WHEN ae.event_type = 'print' THEN 3 ELSE 1 END) DESC
-        LIMIT 5
+        ORDER BY score DESC
+        LIMIT ?
         """,
-        (device_id,),
+        (device_id, limit),
     ) as cursor:
-        top_tag_ids = [r["tag_id"] for r in await cursor.fetchall()]
+        return [(r["tag_id"], r["score"]) for r in await cursor.fetchall()]
 
-    if not top_tag_ids:
-        return []
 
-    # Get printed image IDs for this device
+async def get_interacted_page_ids(
+    db: aiosqlite.Connection, device_id: str
+) -> set[int]:
+    """Return page IDs the device has interacted with (all prints + last 50 views/details)."""
+    # All printed
     async with db.execute(
-        "SELECT DISTINCT CAST(image_id AS INTEGER) AS iid FROM activity_events WHERE device_id = ? AND event_type = 'print'",
+        "SELECT DISTINCT CAST(image_id AS INTEGER) AS iid FROM activity_events "
+        "WHERE device_id = ? AND event_type = 'print' AND image_id IS NOT NULL",
         (device_id,),
     ) as cursor:
-        printed_ids = {r["iid"] for r in await cursor.fetchall()}
+        ids = {r["iid"] for r in await cursor.fetchall()}
 
-    placeholders = ",".join("?" * len(top_tag_ids))
+    # Last 50 viewed/detailed
+    async with db.execute(
+        "SELECT DISTINCT CAST(image_id AS INTEGER) AS iid FROM "
+        "(SELECT image_id FROM activity_events "
+        " WHERE device_id = ? AND event_type IN ('view', 'detail') AND image_id IS NOT NULL "
+        " ORDER BY event_timestamp DESC LIMIT 50)",
+        (device_id,),
+    ) as cursor:
+        ids.update(r["iid"] for r in await cursor.fetchall())
+
+    return ids
+
+
+async def get_popular_page_ids(
+    db: aiosqlite.Connection, limit: int = 100
+) -> list[int]:
+    """Return globally popular page IDs ranked by total interactions (non-admin devices)."""
+    async with db.execute(
+        f"""
+        SELECT CAST(ae.image_id AS INTEGER) AS page_id, COUNT(*) AS cnt
+        FROM activity_events ae
+        WHERE ae.image_id IS NOT NULL
+          AND {_NON_ADMIN_FILTER}
+        GROUP BY page_id
+        ORDER BY cnt DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ) as cursor:
+        return [r["page_id"] for r in await cursor.fetchall()]
+
+
+async def get_personalized_items(
+    db: aiosqlite.Connection, device_id: str, skip: int = 0, limit: int = 20
+) -> list[dict[str, Any]]:
+    """Return personalized browsing list for a device.
+
+    Scoring: pages matching device's tag interests score higher,
+    pages already interacted with are deprioritized.
+    """
+    affinity = await compute_tag_affinity(db, device_id)
+    interacted = await get_interacted_page_ids(db, device_id)
+
+    if not affinity:
+        # No history — fall back to popularity-based ordering
+        popular_ids = await get_popular_page_ids(db, limit=500)
+        if popular_ids:
+            # Order by popularity rank, then random for unseen
+            pop_cases = " ".join(f"WHEN {pid} THEN {i}" for i, pid in enumerate(popular_ids))
+            async with db.execute(
+                f"""
+                SELECT * FROM printable_pages p
+                WHERE p.parent_id IS NULL
+                  {_BLOCKED_TAG_FILTER}
+                ORDER BY CASE p.id {pop_cases} ELSE 99999 END,
+                         (p.id * 2654435761) % 2147483647
+                LIMIT ? OFFSET ?
+                """,
+                (limit, skip),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        else:
+            # No popularity data at all — random
+            async with db.execute(
+                f"""
+                SELECT * FROM printable_pages p
+                WHERE p.parent_id IS NULL
+                  {_BLOCKED_TAG_FILTER}
+                ORDER BY (p.id * 2654435761) % 2147483647
+                LIMIT ? OFFSET ?
+                """,
+                (limit, skip),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        return [await _build_item_dict(db, r) for r in rows]
+
+    # Build tag affinity map
+    tag_scores = {tid: score for tid, score in affinity}
+    tag_ids = list(tag_scores.keys())
+    tag_placeholders = ",".join("?" * len(tag_ids))
+
+    # Build interacted exclusion for deprioritization
+    interacted_list = list(interacted) if interacted else []
+    interacted_cases = ""
+    if interacted_list:
+        interacted_placeholders = ",".join("?" * len(interacted_list))
+        interacted_cases = f"- CASE WHEN p.id IN ({interacted_placeholders}) THEN 1000 ELSE 0 END"
+
+    # Score = sum of affinity for page's tags - penalty for already-seen
+    # We use a subquery to compute tag relevance score
+    async with db.execute(
+        f"""
+        SELECT p.*, COALESCE(tag_score.total, 0) {interacted_cases} AS relevance
+        FROM printable_pages p
+        LEFT JOIN (
+            SELECT pt.page_id, SUM(
+                CASE pt.tag_id
+                    {' '.join(f'WHEN {tid} THEN {score}' for tid, score in tag_scores.items())}
+                    ELSE 0
+                END
+            ) AS total
+            FROM page_tags pt
+            WHERE pt.tag_id IN ({tag_placeholders})
+            GROUP BY pt.page_id
+        ) tag_score ON tag_score.page_id = p.id
+        WHERE p.parent_id IS NULL
+          {_BLOCKED_TAG_FILTER}
+        ORDER BY relevance DESC, (p.id * 2654435761) % 2147483647
+        LIMIT ? OFFSET ?
+        """,
+        (*interacted_list, *tag_ids, limit, skip),
+    ) as cursor:
+        rows = await cursor.fetchall()
+
+    return [await _build_item_dict(db, r) for r in rows]
+
+
+async def get_recommendations(
+    db: aiosqlite.Connection, device_id: str, limit: int = 20
+) -> list[dict[str, Any]]:
+    """Personalized recommendations based on tag affinity. Falls back to popular items."""
+    affinity = await compute_tag_affinity(db, device_id)
+    interacted = await get_interacted_page_ids(db, device_id)
+
+    if not affinity:
+        # Fallback: popular items
+        popular_ids = await get_popular_page_ids(db, limit=limit)
+        if not popular_ids:
+            return []
+        placeholders = ",".join("?" * len(popular_ids))
+        async with db.execute(
+            f"""
+            SELECT * FROM printable_pages p
+            WHERE p.id IN ({placeholders})
+              AND p.parent_id IS NULL
+              {_BLOCKED_TAG_FILTER}
+            ORDER BY RANDOM()
+            LIMIT ?
+            """,
+            (*popular_ids, limit),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [await _build_item_dict(db, r) for r in rows]
+
+    tag_ids = [tid for tid, _ in affinity]
+    tag_placeholders = ",".join("?" * len(tag_ids))
+
+    # Exclude interacted pages
+    exclude_list = list(interacted) if interacted else []
+    exclude_clause = ""
+    exclude_params: list[Any] = []
+    if exclude_list:
+        exclude_placeholders = ",".join("?" * len(exclude_list))
+        exclude_clause = f"AND pp.id NOT IN ({exclude_placeholders})"
+        exclude_params = exclude_list
+
     async with db.execute(
         f"""
         SELECT DISTINCT pp.*
         FROM printable_pages pp
         JOIN page_tags pt ON pt.page_id = pp.id
-        WHERE pt.tag_id IN ({placeholders})
+        WHERE pt.tag_id IN ({tag_placeholders})
           AND pp.parent_id IS NULL
-          AND pp.id NOT IN ({",".join("?" * len(printed_ids)) if printed_ids else "NULL"})
+          {exclude_clause}
+          {_BLOCKED_TAG_FILTER.replace('p.id', 'pp.id')}
         ORDER BY RANDOM()
         LIMIT ?
         """,
-        (*top_tag_ids, *printed_ids, limit),
+        (*tag_ids, *exclude_params, limit),
     ) as cursor:
         rows = await cursor.fetchall()
+
+    if len(rows) < limit:
+        # Not enough from tags — supplement with popular
+        existing_ids = {r["id"] for r in rows}
+        popular_ids = await get_popular_page_ids(db, limit=limit)
+        supplement_ids = [pid for pid in popular_ids if pid not in existing_ids and pid not in interacted][:limit - len(rows)]
+        if supplement_ids:
+            sup_placeholders = ",".join("?" * len(supplement_ids))
+            async with db.execute(
+                f"""
+                SELECT * FROM printable_pages p
+                WHERE p.id IN ({sup_placeholders})
+                  AND p.parent_id IS NULL
+                  {_BLOCKED_TAG_FILTER}
+                """,
+                supplement_ids,
+            ) as cursor:
+                rows = list(rows) + await cursor.fetchall()
 
     return [await _build_item_dict(db, r) for r in rows]
 

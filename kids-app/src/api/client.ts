@@ -14,7 +14,7 @@ export class ApiRequestError extends Error {
 
 export interface ApiClient {
   baseUrl: string;
-  getItems(skip?: number, limit?: number): Promise<Item[]>;
+  getItems(skip?: number, limit?: number, deviceId?: string): Promise<Item[]>;
   search(q: string, skip?: number, limit?: number): Promise<Item[]>;
   getRelated(itemIndex: number): Promise<Item[]>;
   getTags(limit?: number): Promise<string[]>;
@@ -34,8 +34,11 @@ export function createApiClient(baseUrl: string): ApiClient {
 
   return {
     baseUrl,
-    getItems: (skip = 0, limit = 20) =>
-      request<Item[]>(`${baseUrl}/api/items?skip=${skip}&limit=${limit}`),
+    getItems: (skip = 0, limit = 20, deviceId?: string) => {
+      let url = `${baseUrl}/api/items?skip=${skip}&limit=${limit}`;
+      if (deviceId) url += `&device_id=${encodeURIComponent(deviceId)}`;
+      return request<Item[]>(url);
+    },
 
     search: (q, skip = 0, limit = 20) =>
       request<Item[]>(

@@ -64,6 +64,16 @@ const REQUIRED_E2E_COVERAGE = [
     scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4'],
   },
   {
+    story: 'US1 (009) — Personalized Browsing List',
+    file: 'us9-personalized-list.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3'],
+  },
+  {
+    story: 'US2 (009) — Mobile Sends Device Identity',
+    file: 'us9-personalized-list.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-4'],
+  },
+  {
     story: 'US-Update-1 — Check for Updates Automatically',
     file: 'us-update.test.tsx',
     scenarios: ['AS-1', 'AS-2', 'AS-3'],
