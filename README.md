@@ -16,7 +16,16 @@ uv sync
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-Seed database: `uv run python seed.py`
+Seed database: `uv run python seed.py --data <file.json> --source <site-id>`
+
+### Content Pipeline
+
+Scrapers live in a [separate repo](https://github.com/ihfazhillah/print-scraper). Output JSON is seeded into SQLite via `seed.py`.
+
+- **21 sources** across httpx+BS4 and Playwright scrapers
+- **~94k printable pages**, **~4k tags**
+- Print handler auto-dispatches by URL pattern (PDF, image, Krokotak, detail-page)
+- Tag blocking for content moderation (admin API)
 
 ### Mobile
 
