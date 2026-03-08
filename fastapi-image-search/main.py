@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from db import (
+    bulk_block_tags,
     bulk_translate_tags,
     create_page,
     create_tag,
@@ -41,6 +42,7 @@ from db import (
     register_device,
     search_by_tag,
     set_device_admin,
+    set_tag_blocked,
     update_device_name,
     update_page,
     update_tag,
@@ -222,11 +224,11 @@ async def api_get_tags(limit: int = 10):
 
 
 @app.get("/api/tags/all")
-async def api_get_all_tags(skip: int = 0, limit: int = 50):
-    """List all tags with Indonesian translations, paginated."""
+async def api_get_all_tags(skip: int = 0, limit: int = 50, blocked_only: bool = False):
+    """List all tags with Indonesian translations, paginated. Use blocked_only=true to see blocked tags."""
     try:
         async with get_db() as db:
-            return await get_all_tags(db, skip, limit)
+            return await get_all_tags(db, skip, limit, blocked_only=blocked_only)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 
@@ -663,6 +665,36 @@ async def api_deactivate_device(device_id: str):
         deleted = await deactivate_device(db, device_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Device not found or already inactive")
+
+
+# ---------------------------------------------------------------------------
+# Admin: Tag Blocking
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/admin/tags/blocked")
+async def api_get_blocked_tags(skip: int = 0, limit: int = 100):
+    """List all blocked tags."""
+    async with get_db() as db:
+        return await get_all_tags(db, skip, limit, blocked_only=True)
+
+
+@app.patch("/api/admin/tags/{tag_id}/block")
+async def api_toggle_tag_blocked(tag_id: int, blocked: bool = True):
+    """Block or unblock a single tag."""
+    async with get_db() as db:
+        result = await set_tag_blocked(db, tag_id, blocked)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    return result
+
+
+@app.post("/api/admin/tags/block")
+async def api_bulk_block_tags(tag_ids: list[int], blocked: bool = True):
+    """Block or unblock multiple tags at once."""
+    async with get_db() as db:
+        count = await bulk_block_tags(db, tag_ids, blocked)
+    return {"updated": count, "blocked": blocked}
 
 
 if __name__ == "__main__":

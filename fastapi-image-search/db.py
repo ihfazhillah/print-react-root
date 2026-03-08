@@ -30,7 +30,8 @@ CREATE INDEX IF NOT EXISTS idx_pages_source ON printable_pages(source);
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    id_translation TEXT NOT NULL DEFAULT ''
+    id_translation TEXT NOT NULL DEFAULT '',
+    blocked INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS page_tags (
@@ -120,6 +121,17 @@ async def init_db(db_path: str | None = None) -> None:
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_tags_id_translation ON tags(id_translation)"
         )
+
+        # Migration: add blocked column to existing tags table
+        try:
+            await db.execute(
+                "ALTER TABLE tags ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0"
+            )
+        except aiosqlite.OperationalError:
+            pass  # Column already exists
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tags_blocked ON tags(blocked)"
+        )
         await db.commit()
 
 
@@ -171,10 +183,19 @@ async def _build_item_dict(db: aiosqlite.Connection, row: aiosqlite.Row) -> dict
     return item
 
 
+_BLOCKED_TAG_FILTER = """
+    AND p.id NOT IN (
+        SELECT pt2.page_id FROM page_tags pt2
+        JOIN tags t2 ON t2.id = pt2.tag_id
+        WHERE t2.blocked = 1
+    )
+"""
+
+
 async def get_items(db: aiosqlite.Connection, skip: int, limit: int) -> list[dict[str, Any]]:
-    """Return paginated top-level items (parent_id IS NULL)."""
+    """Return paginated top-level items (parent_id IS NULL), excluding blocked."""
     async with db.execute(
-        "SELECT * FROM printable_pages WHERE parent_id IS NULL ORDER BY id LIMIT ? OFFSET ?",
+        f"SELECT * FROM printable_pages p WHERE p.parent_id IS NULL {_BLOCKED_TAG_FILTER} ORDER BY p.id LIMIT ? OFFSET ?",
         (limit, skip),
     ) as cursor:
         rows = await cursor.fetchall()
@@ -182,9 +203,9 @@ async def get_items(db: aiosqlite.Connection, skip: int, limit: int) -> list[dic
 
 
 async def get_item_count(db: aiosqlite.Connection) -> int:
-    """Return total count of top-level items."""
+    """Return total count of top-level items, excluding blocked."""
     async with db.execute(
-        "SELECT COUNT(*) as cnt FROM printable_pages WHERE parent_id IS NULL"
+        f"SELECT COUNT(*) as cnt FROM printable_pages p WHERE p.parent_id IS NULL {_BLOCKED_TAG_FILTER}"
     ) as cursor:
         row = await cursor.fetchone()
         return row["cnt"]
@@ -203,6 +224,7 @@ async def search_by_tag(
         LEFT JOIN page_tags pt ON pt.page_id = p.id
         LEFT JOIN tags t ON t.id = pt.tag_id
         WHERE p.parent_id IS NULL
+          AND t.blocked = 0
           AND (
             LOWER(t.name) LIKE LOWER(?)
             OR LOWER(t.id_translation) LIKE LOWER(?)
@@ -211,6 +233,7 @@ async def search_by_tag(
               JOIN page_tags cpt ON cpt.page_id = child.id
               JOIN tags ct ON ct.id = cpt.tag_id
               WHERE child.parent_id IS NOT NULL
+                AND ct.blocked = 0
                 AND (LOWER(ct.name) LIKE LOWER(?)
                      OR LOWER(ct.id_translation) LIKE LOWER(?))
             )
@@ -261,9 +284,9 @@ async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, 
 
 
 async def get_tags(db: aiosqlite.Connection, limit: int) -> list[dict[str, Any]]:
-    """Return sorted unique tags with id and translation."""
+    """Return sorted unique non-blocked tags with id and translation."""
     async with db.execute(
-        "SELECT id, name, id_translation FROM tags ORDER BY name LIMIT ?", (limit,)
+        "SELECT id, name, id_translation FROM tags WHERE blocked = 0 ORDER BY name LIMIT ?", (limit,)
     ) as cursor:
         rows = await cursor.fetchall()
     return [
@@ -278,16 +301,22 @@ async def get_tags(db: aiosqlite.Connection, limit: int) -> list[dict[str, Any]]
 
 
 async def get_all_tags(
-    db: aiosqlite.Connection, skip: int = 0, limit: int = 50
+    db: aiosqlite.Connection, skip: int = 0, limit: int = 50,
+    blocked_only: bool = False,
 ) -> list[dict[str, Any]]:
-    """Return paginated tags with id, name, and id_translation."""
+    """Return paginated tags with id, name, id_translation, and blocked status."""
+    where = "WHERE blocked = 1" if blocked_only else ""
     async with db.execute(
-        "SELECT id, name, id_translation FROM tags ORDER BY name LIMIT ? OFFSET ?",
+        f"SELECT id, name, id_translation, blocked FROM tags {where} ORDER BY name LIMIT ? OFFSET ?",
         (limit, skip),
     ) as cursor:
         rows = await cursor.fetchall()
     return [
-        {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+        {
+            "id": row["id"], "name": row["name"],
+            "id_translation": row["id_translation"],
+            "blocked": bool(row["blocked"]),
+        }
         for row in rows
     ]
 
@@ -295,12 +324,16 @@ async def get_all_tags(
 async def get_tag(db: aiosqlite.Connection, tag_id: int) -> dict[str, Any] | None:
     """Get a single tag by ID."""
     async with db.execute(
-        "SELECT id, name, id_translation FROM tags WHERE id = ?", (tag_id,)
+        "SELECT id, name, id_translation, blocked FROM tags WHERE id = ?", (tag_id,)
     ) as cursor:
         row = await cursor.fetchone()
     if row is None:
         return None
-    return {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+    return {
+        "id": row["id"], "name": row["name"],
+        "id_translation": row["id_translation"],
+        "blocked": bool(row["blocked"]),
+    }
 
 
 async def create_tag(db: aiosqlite.Connection, data: dict[str, Any]) -> dict[str, Any]:
@@ -334,6 +367,35 @@ async def update_tag(
         )
         await db.commit()
     return await get_tag(db, tag_id)
+
+
+async def set_tag_blocked(
+    db: aiosqlite.Connection, tag_id: int, blocked: bool
+) -> dict[str, Any] | None:
+    """Set the blocked flag on a tag. Returns updated tag or None if not found."""
+    existing = await get_tag(db, tag_id)
+    if existing is None:
+        return None
+    await db.execute(
+        "UPDATE tags SET blocked = ? WHERE id = ?", (1 if blocked else 0, tag_id)
+    )
+    await db.commit()
+    return await get_tag(db, tag_id)
+
+
+async def bulk_block_tags(
+    db: aiosqlite.Connection, tag_ids: list[int], blocked: bool = True
+) -> int:
+    """Block or unblock multiple tags. Returns count of tags updated."""
+    if not tag_ids:
+        return 0
+    placeholders = ",".join("?" * len(tag_ids))
+    cursor = await db.execute(
+        f"UPDATE tags SET blocked = ? WHERE id IN ({placeholders})",
+        [1 if blocked else 0, *tag_ids],
+    )
+    await db.commit()
+    return cursor.rowcount
 
 
 async def delete_tag(db: aiosqlite.Connection, tag_id: int) -> bool:
