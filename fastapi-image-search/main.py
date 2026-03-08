@@ -76,6 +76,12 @@ async def no_cache_static(request: Request, call_next):
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Mount React admin dashboard (built to static/admin/)
+import os as _os
+_admin_dir = _os.path.join(_os.path.dirname(__file__), "static", "admin")
+if _os.path.isdir(_admin_dir):
+    app.mount("/admin/assets", StaticFiles(directory=_os.path.join(_admin_dir, "assets")), name="admin-assets")
+
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
@@ -153,6 +159,17 @@ class DeviceAdminUpdate(BaseModel):
 # ---------------------------------------------------------------------------
 # Existing endpoints (migrated from in-memory data to DB)
 # ---------------------------------------------------------------------------
+
+
+@app.get("/admin/{path:path}", response_class=HTMLResponse, include_in_schema=False)
+async def admin_spa(path: str = ""):
+    """Serve React admin SPA for all /admin/* routes (client-side routing)."""
+    import os as _os
+    index = _os.path.join(_os.path.dirname(__file__), "static", "admin", "index.html")
+    if _os.path.isfile(index):
+        with open(index) as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Admin UI not built yet. Run: cd admin-ui && npm run build</h1>", status_code=503)
 
 
 @app.get("/", response_class=HTMLResponse)

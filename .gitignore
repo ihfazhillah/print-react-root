@@ -1,3 +1,7 @@
+# Node / admin-ui
+admin-ui/node_modules/
+admin-ui/dist/
+
 # Python
 __pycache__/
 *.pyc
