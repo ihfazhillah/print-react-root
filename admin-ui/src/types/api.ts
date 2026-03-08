@@ -79,7 +79,7 @@ export interface TopTagsResult {
 }
 
 export interface TopImage {
-  page_id: number;
+  image_id: number;
   thumbnail: string;
   url: string;
   print_count: number;
@@ -87,7 +87,7 @@ export interface TopImage {
 }
 
 export interface TopImagesResult {
-  top_images: TopImage[];
+  overall: TopImage[];
 }
 
 export interface TimelineEvent {

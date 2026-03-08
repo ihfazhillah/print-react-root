@@ -12,6 +12,7 @@ import type {
   TagCreate,
   TagUpdate,
   TimelineDay,
+  TimelineEvent,
   TopImagesResult,
   TopTagEntry,
   TopTagsResult,
@@ -186,9 +187,24 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
       request<TopImagesResult>(`${baseUrl}/api/admin/insights/top-images?limit=${limit}`),
 
     getDeviceTimeline: (deviceId, limit = 50, offset = 0) =>
-      request<TimelineDay[]>(
-        `${baseUrl}/api/admin/devices/${deviceId}/timeline?limit=${limit}&offset=${offset}`,
-      ),
+      request<{
+        device_name: string;
+        events: Array<{
+          date: string;
+          items: Array<{ event_type: string; image_id: number | null; thumbnail: string | null; timestamp: string }>;
+        }>;
+      }>(`${baseUrl}/api/admin/devices/${deviceId}/timeline?limit=${limit}&offset=${offset}`)
+        .then((res) =>
+          res.events.map((day) => ({
+            date: day.date,
+            events: day.items.map((item) => ({
+              event_type: item.event_type as TimelineEvent['event_type'],
+              image_id: String(item.image_id ?? ''),
+              thumbnail: item.thumbnail,
+              event_timestamp: item.timestamp,
+            })),
+          })),
+        ),
 
     getInterests: () => request<InterestsResult>(`${baseUrl}/api/admin/insights/interests`),
 

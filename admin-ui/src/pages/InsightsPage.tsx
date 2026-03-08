@@ -32,7 +32,7 @@ export function InsightsPage() {
   if (isLoading) return <div style={{ color: '#94a3b8', padding: 32 }}>Loading insights…</div>;
 
   const devices: DeviceSummary[] = summaryQuery.data ?? [];
-  const topImages = topImagesQuery.data?.top_images ?? [];
+  const topImages = topImagesQuery.data?.overall ?? [];
   const shared = interestsQuery.data?.shared ?? [];
 
   return (
@@ -78,7 +78,7 @@ export function InsightsPage() {
         <h2 style={{ fontSize: '1rem', marginBottom: 16, color: '#475569' }}>Most Printed</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
           {topImages.map((img) => (
-            <div key={img.page_id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div key={img.image_id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <img
                 src={client.proxyImageUrl(img.thumbnail)}
                 alt=""
