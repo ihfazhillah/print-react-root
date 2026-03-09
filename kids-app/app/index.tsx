@@ -18,19 +18,36 @@ import type { Item } from '../src/types/api';
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchSubmitted, setSearchSubmitted] = useState(false);
   const router = useRouter();
   const { trackView } = useActivityTracking();
 
-  const showAutocomplete = searchQuery.length >= 2;
-  const showDiscovery = searchFocused && searchQuery.length === 0;
+  const showAutocomplete = searchQuery.length >= 2 && !searchSubmitted;
+  const showDiscovery = searchFocused && searchQuery.length === 0 && !searchSubmitted;
   const showSuggestions = showAutocomplete || showDiscovery;
-
-  const isSearching = searchQuery.length > 0 && !showSuggestions;
 
   const autocompleteQuery = useAutocomplete(searchQuery);
   const discoveryQuery = useDiscovery();
+
+  const activeSuggestions = showAutocomplete
+    ? (autocompleteQuery.data ?? [])
+    : (discoveryQuery.data ?? []);
+  // isPending = true while no cached data exists (debouncing or fetching)
+  // isLoading = isPending && isFetching (only true while actively fetching)
+  // Using isPending ensures the panel shows immediately on 2+ chars, not after 300ms debounce gap
+  const suggestionsPending = showAutocomplete
+    ? autocompleteQuery.isPending
+    : discoveryQuery.isPending;
+  const suggestionsLoading = showAutocomplete
+    ? autocompleteQuery.isLoading
+    : discoveryQuery.isLoading;
+
+  // Show panel when: suggestions intended AND (no data yet OR has data)
+  const showSuggestionsPanel = showSuggestions && (suggestionsPending || activeSuggestions.length > 0);
+  const isSearching = searchQuery.length > 0 && !showSuggestionsPanel;
+
   const itemsQuery = useItems();
-  const searchQ = useSearch(searchQuery, !showSuggestions);
+  const searchQ = useSearch(searchQuery, !showSuggestionsPanel);
   const recsQuery = useRecommendations();
   const recommendations = useMemo(() => recsQuery.data ?? [], [recsQuery.data]);
 
@@ -45,14 +62,21 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSearching, items.length]);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setSearchSubmitted(false);
+  }, []);
+
   const handleSuggestionSelect = useCallback((term: string) => {
     setSearchQuery(term);
     setSearchFocused(false);
+    setSearchSubmitted(true);
   }, []);
 
   const handleSubmit = useCallback((query: string) => {
     if (query.length > 0) {
       setSearchFocused(false);
+      setSearchSubmitted(true);
     }
   }, []);
 
@@ -85,13 +109,6 @@ export default function HomeScreen() {
 
   const handleRetry = useCallback(() => activeQuery.refetch(), [activeQuery.refetch]);
 
-  const activeSuggestions = showAutocomplete
-    ? (autocompleteQuery.data ?? [])
-    : (discoveryQuery.data ?? []);
-  const suggestionsLoading = showAutocomplete
-    ? autocompleteQuery.isLoading
-    : discoveryQuery.isLoading;
-
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -111,12 +128,13 @@ export default function HomeScreen() {
       />
       <StatusBar style="auto" />
       <SearchBar
-        onSearch={setSearchQuery}
+        value={searchQuery}
+        onSearch={handleSearchChange}
         onFocus={() => setSearchFocused(true)}
         onBlur={() => setSearchFocused(false)}
         onSubmit={handleSubmit}
       />
-      {showSuggestions ? (
+      {showSuggestionsPanel ? (
         <SuggestionList
           suggestions={activeSuggestions}
           isLoading={suggestionsLoading}

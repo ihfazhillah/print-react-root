@@ -124,6 +124,8 @@ beforeEach(() => {
       updated_at: '2026-01-01T01:00:00Z',
     }),
     recordEvent: jest.fn(),
+    getRecommendations: jest.fn().mockResolvedValue([]),
+    linkAndroidId: jest.fn().mockResolvedValue({ status: 'ok' }),
   };
   mockCreateClient.mockReturnValue(mockClient as ReturnType<typeof createDeviceApiClient>);
 });
@@ -187,6 +189,8 @@ test('AS-5: registration error is surfaced in state', async () => {
     register: jest.fn().mockRejectedValue(new Error('Network error')),
     updateName: jest.fn(),
     recordEvent: jest.fn(),
+    getRecommendations: jest.fn().mockResolvedValue([]),
+    linkAndroidId: jest.fn().mockResolvedValue({ status: 'ok' }),
   };
   mockCreateClient.mockReturnValue(failingClient as ReturnType<typeof createDeviceApiClient>);
 

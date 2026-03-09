@@ -88,6 +88,16 @@ const REQUIRED_E2E_COVERAGE = [
     file: 'us-update.test.tsx',
     scenarios: ['AS-1', 'AS-2'],
   },
+  {
+    story: 'US1 (011) — Autocomplete While Typing',
+    file: 'us11-autosuggest.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-3', 'AS-6'],
+  },
+  {
+    story: 'US2 (011) — Suggested Terms Discovery',
+    file: 'us11-autosuggest.test.tsx',
+    scenarios: ['AS-1', 'AS-2', 'AS-5'],
+  },
 ];
 
 describe('E2E coverage guard', () => {

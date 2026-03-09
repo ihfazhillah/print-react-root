@@ -307,8 +307,8 @@ async def get_tags(
     params: list[Any] = []
 
     if q:
-        conditions.append("t.name LIKE ?")
-        params.append(f"{q}%")
+        conditions.append("(t.name LIKE ? OR t.id_translation LIKE ?)")
+        params.extend([f"{q}%", f"{q}%"])
 
     where = " AND ".join(conditions)
 

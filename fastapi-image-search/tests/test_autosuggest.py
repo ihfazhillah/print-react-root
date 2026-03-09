@@ -124,6 +124,22 @@ class TestGetTagsPrefixFilter(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), [])
 
+    def test_prefix_filter_matches_indonesian_translation(self):
+        # Typing 'kucing' (Indonesian for cat) should return the 'cat' tag
+        resp = self.client.get("/api/tags?q=kucing&limit=10")
+        self.assertEqual(resp.status_code, 200)
+        names = [t["name"] for t in resp.json()]
+        self.assertIn("cat", names)
+        self.assertNotIn("dog", names)
+
+    def test_prefix_filter_matches_both_english_and_indonesian(self):
+        # 'di' matches 'dinosaur' (English) and 'dinosaurus' (id_translation)
+        resp = self.client.get("/api/tags?q=di&limit=10")
+        self.assertEqual(resp.status_code, 200)
+        names = [t["name"] for t in resp.json()]
+        self.assertIn("dinosaur", names)
+        self.assertIn("dingo", names)
+
     def test_invalid_order_by_returns_400(self):
         resp = self.client.get("/api/tags?order_by=invalid")
         self.assertEqual(resp.status_code, 400)

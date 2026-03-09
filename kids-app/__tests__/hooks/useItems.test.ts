@@ -12,7 +12,7 @@ test('returns items on successful fetch', async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
   expect(result.current.data?.pages[0]).toHaveLength(20);
-  expect(client.getItems).toHaveBeenCalledWith(0, 20);
+  expect(client.getItems).toHaveBeenCalledWith(0, 20, undefined);
 });
 
 test('fetches next page when current page is full', async () => {
@@ -31,7 +31,7 @@ test('fetches next page when current page is full', async () => {
 
   await waitFor(() => expect(result.current.data?.pages).toHaveLength(2));
   expect(result.current.data?.pages[1]).toHaveLength(1);
-  expect(client.getItems).toHaveBeenCalledWith(20, 20);
+  expect(client.getItems).toHaveBeenCalledWith(20, 20, undefined);
 });
 
 test('has no next page when response is smaller than page size', async () => {

@@ -90,72 +90,56 @@ test('AS-1: home screen shows search input and image thumbnails', async () => {
   expect(images.length).toBe(6);
 });
 
-test('AS-3: typing a search term filters images via search-as-you-type', async () => {
+test('AS-3: typing 2+ chars shows suggestion list, not search results', async () => {
   const allItems = fakePrintItems(6);
-  const searchResults = fakePrintItems(2);
+  const suggestions = [{ name: 'craft', id_translation: 'Kerajinan' }];
 
   const client = createMockClient({
     getItems: jest.fn().mockResolvedValue(allItems),
-    search: jest.fn().mockResolvedValue(searchResults),
+    getSuggestions: jest.fn().mockResolvedValue(suggestions),
   });
 
-  const { getByPlaceholderText, getAllByTestId } = renderHome(client);
+  const { getByPlaceholderText, getAllByTestId, queryAllByTestId, findByText } = renderHome(client);
 
-  // Wait for initial items to load
-  await waitFor(() => {
-    expect(getAllByTestId('image').length).toBe(6);
-  });
+  await waitFor(() => expect(getAllByTestId('image').length).toBe(6));
 
-  // Type a search term
-  fireEvent.changeText(getByPlaceholderText('Search images...'), 'craft');
+  fireEvent.changeText(getByPlaceholderText('Search images...'), 'cr');
+  act(() => jest.advanceTimersByTime(500));
 
-  // Advance past the debounce delay
-  act(() => {
-    jest.advanceTimersByTime(500);
-  });
-
-  // Grid updates to show filtered results
-  await waitFor(() => {
-    expect(getAllByTestId('image').length).toBe(2);
-  });
-
-  expect(client.search).toHaveBeenCalledWith('craft', 0, 20);
+  // Suggestion list shown, image grid hidden
+  await findByText('Kerajinan');
+  expect(queryAllByTestId('image')).toHaveLength(0);
+  // Search-as-you-type must NOT fire while suggestions are active
+  expect(client.search).not.toHaveBeenCalled();
 });
 
-test('AS-4: clearing search restores full list', async () => {
+test('AS-4: clearing search dismisses suggestions and restores full list', async () => {
   const allItems = fakePrintItems(6);
-  const searchResults = fakePrintItems(2);
+  const suggestions = [{ name: 'craft', id_translation: 'Kerajinan' }];
 
   const client = createMockClient({
     getItems: jest.fn().mockResolvedValue(allItems),
-    search: jest.fn().mockResolvedValue(searchResults),
+    getSuggestions: jest.fn().mockResolvedValue(suggestions),
   });
 
-  const { getByPlaceholderText, getAllByTestId } = renderHome(client);
+  const { getByPlaceholderText, getAllByTestId, findByText, queryByText } = renderHome(client);
 
-  // Wait for initial items
-  await waitFor(() => {
-    expect(getAllByTestId('image').length).toBe(6);
-  });
+  await waitFor(() => expect(getAllByTestId('image').length).toBe(6));
 
   const searchInput = getByPlaceholderText('Search images...');
 
-  // Type search term
-  fireEvent.changeText(searchInput, 'craft');
+  // Type to trigger suggestions
+  fireEvent.changeText(searchInput, 'cr');
   act(() => jest.advanceTimersByTime(500));
-
-  await waitFor(() => {
-    expect(getAllByTestId('image').length).toBe(2);
-  });
+  await findByText('Kerajinan');
 
   // Clear search
   fireEvent.changeText(searchInput, '');
   act(() => jest.advanceTimersByTime(500));
 
-  // Full list is restored
-  await waitFor(() => {
-    expect(getAllByTestId('image').length).toBe(6);
-  });
+  // Full list restored, suggestions gone
+  await waitFor(() => expect(getAllByTestId('image').length).toBe(6));
+  expect(queryByText('Kerajinan')).toBeNull();
 });
 
 test('AS-5: tapping an image navigates to detail', async () => {

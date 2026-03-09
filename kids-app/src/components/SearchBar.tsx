@@ -1,24 +1,16 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../theme';
 
 interface SearchBarProps {
+  value: string;
   onSearch: (query: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   onSubmit?: (query: string) => void;
 }
 
-export function SearchBar({ onSearch, onFocus, onBlur, onSubmit }: SearchBarProps) {
-  const [text, setText] = useState('');
-
-  const handleChange = (value: string) => {
-    setText(value);
-    onSearch(value);
-  };
-
+export function SearchBar({ value, onSearch, onFocus, onBlur, onSubmit }: SearchBarProps) {
   const handleClear = () => {
-    setText('');
     onSearch('');
   };
 
@@ -27,17 +19,17 @@ export function SearchBar({ onSearch, onFocus, onBlur, onSubmit }: SearchBarProp
       <TextInput
         style={styles.input}
         placeholder="Search images..."
-        value={text}
-        onChangeText={handleChange}
+        value={value}
+        onChangeText={onSearch}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
         accessibilityLabel="Search images"
         onFocus={onFocus}
         onBlur={onBlur}
-        onSubmitEditing={() => onSubmit?.(text)}
+        onSubmitEditing={() => onSubmit?.(value)}
       />
-      {text.length > 0 && (
+      {value.length > 0 && (
         <Pressable
           style={styles.clearButton}
           onPress={handleClear}

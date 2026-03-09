@@ -82,6 +82,8 @@ beforeEach(() => {
     register: jest.fn(),
     updateName: jest.fn(),
     recordEvent: mockRecordEvent,
+    getRecommendations: jest.fn().mockResolvedValue([]),
+    linkAndroidId: jest.fn().mockResolvedValue({ status: 'ok' }),
   } as ReturnType<typeof createDeviceApiClient>);
 });
 
