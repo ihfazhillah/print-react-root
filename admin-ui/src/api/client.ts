@@ -35,8 +35,9 @@ export interface AdminApiClient {
   baseUrl: string;
 
   // Content browsing
-  getItems(skip?: number, limit?: number): Promise<Page[]>;
-  search(q: string, skip?: number, limit?: number): Promise<Page[]>;
+  getItems(skip?: number, limit?: number, source?: string): Promise<Page[]>;
+  search(q: string, skip?: number, limit?: number, source?: string): Promise<Page[]>;
+  getSources(): Promise<string[]>;
   getTopTagNames(limit?: number): Promise<string[]>;
 
   // Page CRUD
@@ -45,7 +46,7 @@ export interface AdminApiClient {
   deletePage(pageId: number): Promise<void>;
 
   // Tag CRUD
-  getAllTags(skip?: number, limit?: number, blockedOnly?: boolean): Promise<Tag[]>;
+  getAllTags(skip?: number, limit?: number, blockedOnly?: boolean, q?: string): Promise<Tag[]>;
   createTag(data: TagCreate): Promise<Tag>;
   updateTag(tagId: number, data: TagUpdate): Promise<Tag>;
   deleteTag(tagId: number): Promise<void>;
@@ -95,13 +96,17 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
     baseUrl,
 
     // Content browsing
-    getItems: (skip = 0, limit = 20) =>
-      request<Page[]>(`${baseUrl}/api/items?skip=${skip}&limit=${limit}`),
-
-    search: (q, skip = 0, limit = 20) =>
+    getItems: (skip = 0, limit = 20, source?: string) =>
       request<Page[]>(
-        `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
+        `${baseUrl}/api/items?skip=${skip}&limit=${limit}${source ? `&source=${encodeURIComponent(source)}` : ''}`,
       ),
+
+    search: (q, skip = 0, limit = 20, source?: string) =>
+      request<Page[]>(
+        `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}${source ? `&source=${encodeURIComponent(source)}` : ''}`,
+      ),
+
+    getSources: () => request<string[]>(`${baseUrl}/api/sources`),
 
     getTopTagNames: (limit = 10) =>
       request<Array<{ id: number; name: string; id_translation: string }>>(`${baseUrl}/api/tags?limit=${limit}`)
@@ -116,9 +121,9 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
     deletePage: (pageId) => request<void>(`${baseUrl}/api/pages/${pageId}`, { method: 'DELETE' }),
 
     // Tag CRUD
-    getAllTags: (skip = 0, limit = 50, blockedOnly = false) =>
+    getAllTags: (skip = 0, limit = 50, blockedOnly = false, q?: string) =>
       request<Tag[]>(
-        `${baseUrl}/api/tags/all?skip=${skip}&limit=${limit}&blocked_only=${blockedOnly}`,
+        `${baseUrl}/api/tags/all?skip=${skip}&limit=${limit}&blocked_only=${blockedOnly}${q ? `&q=${encodeURIComponent(q)}` : ''}`,
       ),
 
     createTag: (data) => request<Tag>(`${baseUrl}/api/tags`, json('POST', data)),

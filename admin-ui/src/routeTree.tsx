@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
+import { z } from 'zod';
 import { Layout } from './components/Layout';
 import { PagesPage } from './pages/PagesPage';
 import { TagsPage } from './pages/TagsPage';
@@ -17,6 +18,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: z.object({ q: z.string().optional() }).parse,
   component: PagesPage,
 });
 

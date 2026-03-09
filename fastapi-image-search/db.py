@@ -192,11 +192,13 @@ _BLOCKED_TAG_FILTER = """
 """
 
 
-async def get_items(db: aiosqlite.Connection, skip: int, limit: int) -> list[dict[str, Any]]:
+async def get_items(db: aiosqlite.Connection, skip: int, limit: int, source: str | None = None) -> list[dict[str, Any]]:
     """Return paginated top-level items (parent_id IS NULL), excluding blocked."""
+    source_filter = "AND p.source = ?" if source is not None else ""
+    params: tuple = (limit, skip) if source is None else (source, limit, skip)
     async with db.execute(
-        f"SELECT * FROM printable_pages p WHERE p.parent_id IS NULL {_BLOCKED_TAG_FILTER} ORDER BY p.id LIMIT ? OFFSET ?",
-        (limit, skip),
+        f"SELECT * FROM printable_pages p WHERE p.parent_id IS NULL {_BLOCKED_TAG_FILTER} {source_filter} ORDER BY p.id LIMIT ? OFFSET ?",
+        params,
     ) as cursor:
         rows = await cursor.fetchall()
     return [await _build_item_dict(db, r) for r in rows]
@@ -212,14 +214,18 @@ async def get_item_count(db: aiosqlite.Connection) -> int:
 
 
 async def search_by_tag(
-    db: aiosqlite.Connection, query: str, skip: int, limit: int
+    db: aiosqlite.Connection, query: str, skip: int, limit: int, source: str | None = None
 ) -> list[dict[str, Any]]:
     """Search top-level items by tag name (case-insensitive LIKE)."""
     like_pattern = f"%{query}%"
+    source_filter = "AND p.source = ?" if source is not None else ""
     # Find top-level items whose own tags match, OR that are collections
     # containing child prints whose tags match.
+    params: tuple = (like_pattern, like_pattern, like_pattern, like_pattern, limit, skip)
+    if source is not None:
+        params = (like_pattern, like_pattern, like_pattern, like_pattern, source, limit, skip)
     async with db.execute(
-        """
+        f"""
         SELECT DISTINCT p.* FROM printable_pages p
         LEFT JOIN page_tags pt ON pt.page_id = p.id
         LEFT JOIN tags t ON t.id = pt.tag_id
@@ -238,10 +244,11 @@ async def search_by_tag(
                      OR LOWER(ct.id_translation) LIKE LOWER(?))
             )
           )
+          {source_filter}
         ORDER BY p.id
         LIMIT ? OFFSET ?
         """,
-        (like_pattern, like_pattern, like_pattern, like_pattern, limit, skip),
+        params,
     ) as cursor:
         rows = await cursor.fetchall()
     return [await _build_item_dict(db, r) for r in rows]
@@ -303,12 +310,22 @@ async def get_tags(db: aiosqlite.Connection, limit: int) -> list[dict[str, Any]]
 async def get_all_tags(
     db: aiosqlite.Connection, skip: int = 0, limit: int = 50,
     blocked_only: bool = False,
+    q: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return paginated tags with id, name, id_translation, and blocked status."""
-    where = "WHERE blocked = 1" if blocked_only else ""
+    conditions = []
+    params: list = []
+    if blocked_only:
+        conditions.append("blocked = 1")
+    if q is not None:
+        conditions.append("(LOWER(name) LIKE LOWER(?) OR LOWER(id_translation) LIKE LOWER(?))")
+        like_q = f"%{q}%"
+        params.extend([like_q, like_q])
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    params.extend([limit, skip])
     async with db.execute(
         f"SELECT id, name, id_translation, blocked FROM tags {where} ORDER BY name LIMIT ? OFFSET ?",
-        (limit, skip),
+        params,
     ) as cursor:
         rows = await cursor.fetchall()
     return [
@@ -319,6 +336,15 @@ async def get_all_tags(
         }
         for row in rows
     ]
+
+
+async def get_distinct_sources(db: aiosqlite.Connection) -> list[str]:
+    """Return a sorted list of distinct source strings."""
+    async with db.execute(
+        "SELECT DISTINCT source FROM printable_pages ORDER BY source"
+    ) as cursor:
+        rows = await cursor.fetchall()
+    return [row["source"] for row in rows]
 
 
 async def get_tag(db: aiosqlite.Connection, tag_id: int) -> dict[str, Any] | None:

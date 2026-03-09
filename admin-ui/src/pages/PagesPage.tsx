@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearch } from '@tanstack/react-router';
 import { createColumnHelper, type PaginationState, type ColumnDef } from '@tanstack/react-table';
 import { useAdminApiClient } from '../api/apiClientContext';
 import { DataTable } from '../components/DataTable';
@@ -17,10 +18,13 @@ export function PagesPage() {
   const qc = useQueryClient();
   const toast = useToast();
 
+  const { q: initialQ } = useSearch({ from: '/' });
+
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
-  const [search, setSearch] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
+  const [search, setSearch] = useState(initialQ ?? '');
+  const [activeSearch, setActiveSearch] = useState(initialQ ?? '');
   const [tagFilter, setTagFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('');
 
   const [editTarget, setEditTarget] = useState<Page | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -29,16 +33,21 @@ export function PagesPage() {
   const skip = pagination.pageIndex * PAGE_SIZE;
 
   const pagesQuery = useQuery({
-    queryKey: ['admin', 'pages', skip, activeSearch, tagFilter],
+    queryKey: ['admin', 'pages', skip, activeSearch, tagFilter, sourceFilter],
     queryFn: () =>
       activeSearch
-        ? client.search(activeSearch, skip, PAGE_SIZE)
-        : client.getItems(skip, PAGE_SIZE),
+        ? client.search(activeSearch, skip, PAGE_SIZE, sourceFilter || undefined)
+        : client.getItems(skip, PAGE_SIZE, sourceFilter || undefined),
   });
 
   const tagsQuery = useQuery({
     queryKey: ['admin', 'topTags'],
     queryFn: () => client.getTopTagNames(20),
+  });
+
+  const sourcesQuery = useQuery({
+    queryKey: ['admin', 'sources'],
+    queryFn: () => client.getSources(),
   });
 
   const createMut = useMutation({
@@ -131,7 +140,7 @@ export function PagesPage() {
       </div>
 
       {/* Search bar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           placeholder="Search pages…"
           value={search}
@@ -151,6 +160,16 @@ export function PagesPage() {
           <button onClick={() => { setSearch(''); setActiveSearch(''); }} style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: 'pointer' }}>
             Clear
           </button>
+        )}
+        {sourcesQuery.data && (
+          <select
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setPagination((p) => ({ ...p, pageIndex: 0 })); }}
+            style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: '0.9rem' }}
+          >
+            <option value="">All sources</option>
+            {sourcesQuery.data.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
         )}
       </div>
 

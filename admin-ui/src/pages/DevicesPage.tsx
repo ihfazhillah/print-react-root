@@ -18,6 +18,7 @@ export function DevicesPage() {
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [filter, setFilter] = useState('');
   const [renameTarget, setRenameTarget] = useState<Device | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<Device | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
@@ -51,7 +52,10 @@ export function DevicesPage() {
     onError: () => toast.error('Merge failed'),
   });
 
-  const devices = devicesQuery.data ?? [];
+  const allDevices = devicesQuery.data ?? [];
+  const devices = filter
+    ? allDevices.filter((d) => d.device_name.toLowerCase().includes(filter.toLowerCase()))
+    : allDevices;
 
   const columns = [
     col.accessor('device_name', { header: 'Name' }),
@@ -105,6 +109,16 @@ export function DevicesPage() {
         </div>
       </div>
 
+      {/* Client-side filter */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <input
+          placeholder="Filter by device name…"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={{ maxWidth: 320 }}
+        />
+      </div>
+
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <DataTable
           columns={columns}
@@ -139,7 +153,7 @@ export function DevicesPage() {
       {/* Merge modal */}
       <MergeModal
         open={mergeOpen}
-        devices={devices.filter((d) => d.is_active)}
+        devices={allDevices.filter((d) => d.is_active)}
         onClose={() => setMergeOpen(false)}
         onSubmit={(sourceId, targetId) => mergeMut.mutate({ sourceId, targetId })}
         isLoading={mergeMut.isPending}

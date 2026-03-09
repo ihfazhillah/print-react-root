@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper, type PaginationState, type ColumnDef } from '@tanstack/react-table';
 import { useAdminApiClient } from '../api/apiClientContext';
 import { DataTable } from '../components/DataTable';
@@ -15,8 +16,11 @@ export function TagsPage() {
   const client = useAdminApiClient();
   const qc = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
 
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [search, setSearch] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Tag | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
@@ -24,8 +28,8 @@ export function TagsPage() {
   const skip = pagination.pageIndex * PAGE_SIZE;
 
   const tagsQuery = useQuery({
-    queryKey: ['admin', 'tags', skip],
-    queryFn: () => client.getAllTags(skip, PAGE_SIZE),
+    queryKey: ['admin', 'tags', skip, activeSearch],
+    queryFn: () => client.getAllTags(skip, PAGE_SIZE, false, activeSearch || undefined),
   });
 
   const createMut = useMutation({
@@ -81,6 +85,7 @@ export function TagsPage() {
       header: 'Actions',
       cell: ({ row }) => (
         <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#ccfbf1', color: '#0f766e', border: 'none', borderRadius: 6, cursor: 'pointer' }} onClick={() => navigate({ to: '/', search: { q: row.original.name } })}>View</button>
           <button style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#ede9fe', color: '#6d28d9', border: 'none', borderRadius: 6, cursor: 'pointer' }} onClick={() => setEditTarget(row.original)}>Edit</button>
           <button style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer' }} onClick={() => setDeleteTarget(row.original)}>Delete</button>
         </div>
@@ -102,6 +107,30 @@ export function TagsPage() {
           </button>
           <button className="btn-primary" onClick={() => setAddOpen(true)}>+ Add Tag</button>
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <input
+          placeholder="Search tags…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setActiveSearch(search);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }
+          }}
+          style={{ maxWidth: 320 }}
+        />
+        <button className="btn-primary" onClick={() => { setActiveSearch(search); setPagination((p) => ({ ...p, pageIndex: 0 })); }}>
+          Search
+        </button>
+        {activeSearch && (
+          <button onClick={() => { setSearch(''); setActiveSearch(''); setPagination((p) => ({ ...p, pageIndex: 0 })); }} style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: 'pointer' }}>
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

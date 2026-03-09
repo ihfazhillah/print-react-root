@@ -24,6 +24,7 @@ from db import (
     get_db,
     get_device_by_token,
     get_device_timeline,
+    get_distinct_sources,
     link_android_id,
     merge_devices,
     get_interactions,
@@ -178,25 +179,25 @@ async def root(request: Request):
 
 
 @app.get("/api/items")
-async def api_get_items(skip: int = 0, limit: int = 20, device_id: str | None = None):
+async def api_get_items(skip: int = 0, limit: int = 20, device_id: str | None = None, source: str | None = None):
     """Get collections and prints with pagination. Pass device_id for personalized ordering."""
     try:
         async with get_db() as db:
             if device_id:
                 return await get_personalized_items(db, device_id, skip, limit)
-            return await get_items(db, skip, limit)
+            return await get_items(db, skip, limit, source)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
 @app.get("/api/search")
-async def api_search_items(q: str = "", skip: int = 0, limit: int = 20):
+async def api_search_items(q: str = "", skip: int = 0, limit: int = 20, source: str | None = None):
     """Search items by tag/text with pagination"""
     try:
         async with get_db() as db:
             if not q:
-                return await get_items(db, skip, limit)
-            return await search_by_tag(db, q, skip, limit)
+                return await get_items(db, skip, limit, source)
+            return await search_by_tag(db, q, skip, limit, source)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 
@@ -244,11 +245,21 @@ async def api_get_tags(limit: int = 10):
 
 
 @app.get("/api/tags/all")
-async def api_get_all_tags(skip: int = 0, limit: int = 50, blocked_only: bool = False):
+async def api_get_all_tags(skip: int = 0, limit: int = 50, blocked_only: bool = False, q: str | None = None):
     """List all tags with Indonesian translations, paginated. Use blocked_only=true to see blocked tags."""
     try:
         async with get_db() as db:
-            return await get_all_tags(db, skip, limit, blocked_only=blocked_only)
+            return await get_all_tags(db, skip, limit, blocked_only=blocked_only, q=q)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.get("/api/sources")
+async def api_get_sources():
+    """Return a sorted list of distinct source strings."""
+    try:
+        async with get_db() as db:
+            return await get_distinct_sources(db)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 
