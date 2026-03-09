@@ -2,7 +2,7 @@
 
 **Feature Branch**: `010-react-admin`
 **Created**: 2026-03-08
-**Status**: Draft
+**Status**: Implemented
 **Input**: User description: "Change frontend to React. We need to make it more maintainable as we will add more and more features on top of it."
 
 ## Clarifications
@@ -27,8 +27,9 @@ An administrator opens the admin dashboard and sees the content library. They ca
 
 1. **Given** the admin opens the dashboard, **When** the page loads, **Then** they see a paginated list of printable pages with thumbnails, URLs, types, sources, and tags.
 2. **Given** the admin types a search term, **When** results update, **Then** only matching pages are shown.
-3. **Given** the admin clicks a tag filter, **When** the list refreshes, **Then** only pages with that tag are shown.
+3. **Given** the admin types a tag name in the search box and submits, **When** the list refreshes, **Then** only pages matching that tag are shown.
 4. **Given** there are more than 20 pages, **When** the admin navigates to the next page, **Then** the next batch loads without full page reload.
+5. **Given** the admin selects a source from the source dropdown, **When** the list refreshes, **Then** only pages from that source are shown.
 
 ---
 
@@ -63,6 +64,8 @@ An administrator can view all tags with their Indonesian translations, add new t
 2. **Given** the admin adds a new tag, **When** they submit, **Then** the tag appears in the list.
 3. **Given** the admin clicks "Translate All", **When** translation completes, **Then** previously untranslated tags now show Indonesian translations.
 4. **Given** the admin toggles a tag's blocked status, **When** they save, **Then** the tag is marked as blocked and pages with only that tag are hidden from children.
+5. **Given** the admin types a search term in the tag search box, **When** they submit, **Then** only matching tags are shown.
+6. **Given** the admin clicks "View" on a tag, **When** they are redirected, **Then** the Pages view opens pre-filtered with that tag's name as the search query.
 
 ---
 
@@ -80,6 +83,7 @@ An administrator can view all registered devices, rename them, toggle admin stat
 2. **Given** the admin renames a device, **When** they save, **Then** the new name is shown in the list.
 3. **Given** the admin selects two devices to merge, **When** they confirm, **Then** all activity from the source device is transferred to the target device.
 4. **Given** the admin toggles "Show inactive", **When** the list refreshes, **Then** deactivated devices appear in the list.
+5. **Given** the admin types a name in the filter input, **When** they type, **Then** the device list is instantly narrowed to matching names.
 
 ---
 
@@ -112,7 +116,7 @@ An administrator can view analytics: per-child activity summaries (views, detail
 ### Functional Requirements
 
 - **FR-001**: Dashboard MUST display all existing admin functionality: page CRUD, tag management, device management, and usage insights.
-- **FR-002**: Dashboard MUST use the existing backend API endpoints without requiring backend changes. The React app is built to static files and served by the same FastAPI server.
+- **FR-002**: Dashboard is built to static files and served by the same FastAPI server. Minor backend additions were made during implementation: `GET /api/sources` endpoint, `source=` query filter on items/search, and `q=` search filter on tags.
 - **FR-003**: All list views MUST support pagination without full page reloads.
 - **FR-004**: All create/edit operations MUST validate input before submission and show clear error messages.
 - **FR-005**: Dashboard MUST provide visual feedback during loading states and after successful/failed operations.
@@ -139,8 +143,8 @@ An administrator can view analytics: per-child activity summaries (views, detail
 
 ## Assumptions
 
-- The existing backend API endpoints are sufficient and no backend changes are needed.
+- The existing backend API endpoints were sufficient for the core migration. Additional endpoints (`/api/sources`, `source=` and `q=` filters) were added to support new search/filter capabilities.
 - The admin dashboard is used by a single administrator on a local network — no multi-user concurrency concerns.
-- During development, old dashboard remains at `/` and new React dashboard is served at `/admin`. Old templates and static JS files are removed after the new dashboard is validated.
+- Migration is complete: the React dashboard is served at `/admin`. Old Jinja2 templates and static JS files have been removed.
 - The admin dashboard is desktop-only (no mobile responsive design required).
 - Authentication is handled at the network level (no login screen needed).

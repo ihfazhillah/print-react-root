@@ -19,12 +19,12 @@
 
 **Purpose**: Initialize the React project with Vite, TypeScript, and core dependencies.
 
-- [ ] T001 Initialize Vite + React + TypeScript project in `admin-ui/` with `npm create vite@latest`
-- [ ] T002 Install dependencies: @tanstack/react-query, @tanstack/react-table, @tanstack/react-router in `admin-ui/package.json`
-- [ ] T003 [P] Configure Vite dev server proxy for `/api/*` to `http://localhost:8080` in `admin-ui/vite.config.ts`
-- [ ] T004 [P] Configure TypeScript strict mode in `admin-ui/tsconfig.json`
-- [ ] T005 [P] Configure ESLint for TypeScript + React in `admin-ui/`
-- [ ] T006 [P] Install and configure Vitest + @testing-library/react in `admin-ui/`
+- [X] T001 Initialize Vite + React + TypeScript project in `admin-ui/` with `npm create vite@latest`
+- [X] T002 Install dependencies: @tanstack/react-query, @tanstack/react-table, @tanstack/react-router in `admin-ui/package.json`
+- [X] T003 [P] Configure Vite dev server proxy for `/api/*` to `http://localhost:8080` in `admin-ui/vite.config.ts`
+- [X] T004 [P] Configure TypeScript strict mode in `admin-ui/tsconfig.json`
+- [X] T005 [P] Configure ESLint for TypeScript + React in `admin-ui/`
+- [X] T006 [P] Install and configure Vitest + @testing-library/react in `admin-ui/`
 
 ---
 
@@ -34,18 +34,18 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T007 Define all API response TypeScript types (Page, Tag, Device, Insights types) in `admin-ui/src/types/api.ts` per data-model.md
-- [ ] T008 Implement `createAdminApiClient(baseUrl)` factory with native `fetch` in `admin-ui/src/api/client.ts` per contracts/admin-api-client.md — include all endpoint methods (items, pages, tags, devices, insights)
-- [ ] T009 Create `AdminApiClientContext` provider and `useAdminApiClient()` hook in `admin-ui/src/api/apiClientContext.tsx`
-- [ ] T010 [P] Implement reusable `DataTable` component wrapping TanStack Table (columns, data, pagination) in `admin-ui/src/components/DataTable.tsx`
-- [ ] T011 [P] Implement reusable `Modal` component (open, onClose, title, children) in `admin-ui/src/components/Modal.tsx`
-- [ ] T012 [P] Implement `Toast` notification system with `useToast()` hook in `admin-ui/src/components/Toast.tsx`
-- [ ] T013 [P] Implement `ConfirmDialog` component (open, onConfirm, onCancel, title, message) in `admin-ui/src/components/ConfirmDialog.tsx`
-- [ ] T014 Implement `Layout` component with sidebar navigation (Pages, Tags, Devices, Insights links) in `admin-ui/src/components/Layout.tsx`
-- [ ] T015 Configure TanStack Router with routes (/admin, /admin/tags, /admin/devices, /admin/insights, /admin/insights/:deviceId) in `admin-ui/src/App.tsx`
-- [ ] T016 Create `main.tsx` entry point with QueryClientProvider + ApiClientContext + Router in `admin-ui/src/main.tsx`
-- [ ] T017 Add FastAPI mount for static files at `/admin` with SPA catch-all in `fastapi-image-search/main.py`
-- [ ] T018 Add base CSS with color scheme (purple/teal from existing dashboard) in `admin-ui/src/index.css`
+- [X] T007 Define all API response TypeScript types (Page, Tag, Device, Insights types) in `admin-ui/src/types/api.ts` per data-model.md
+- [X] T008 Implement `createAdminApiClient(baseUrl)` factory with native `fetch` in `admin-ui/src/api/client.ts` per contracts/admin-api-client.md — include all endpoint methods (items, pages, tags, devices, insights)
+- [X] T009 Create `AdminApiClientContext` provider and `useAdminApiClient()` hook in `admin-ui/src/api/apiClientContext.tsx`
+- [X] T010 [P] Implement reusable `DataTable` component wrapping TanStack Table (columns, data, pagination) in `admin-ui/src/components/DataTable.tsx`
+- [X] T011 [P] Implement reusable `Modal` component (open, onClose, title, children) in `admin-ui/src/components/Modal.tsx`
+- [X] T012 [P] Implement `Toast` notification system with `useToast()` hook in `admin-ui/src/components/Toast.tsx`
+- [X] T013 [P] Implement `ConfirmDialog` component (open, onConfirm, onCancel, title, message) in `admin-ui/src/components/ConfirmDialog.tsx`
+- [X] T014 Implement `Layout` component with sidebar navigation (Pages, Tags, Devices, Insights links) in `admin-ui/src/components/Layout.tsx`
+- [X] T015 Configure TanStack Router with routes relative to basepath `/admin` (/, /tags, /devices, /insights, /insights/$deviceId) in `admin-ui/src/routeTree.tsx` and `admin-ui/src/App.tsx`
+- [X] T016 Create `main.tsx` entry point with QueryClientProvider + ApiClientContext + Router in `admin-ui/src/main.tsx`
+- [X] T017 Add FastAPI mount for static files at `/admin` with SPA catch-all in `fastapi-image-search/main.py`
+- [X] T018 Add base CSS with color scheme (purple/teal from existing dashboard) in `admin-ui/src/index.css`
 
 **Checkpoint**: Foundation ready — app shell renders at `/admin` with navigation, shared components available.
 
@@ -59,10 +59,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Implement `usePages(skip, limit)` and `useSearch(q, skip, limit)` query hooks in `admin-ui/src/hooks/usePages.ts`
-- [ ] T020 [US1] Implement `PagesPage` with TanStack Table (columns: thumbnail, URL, type, source, tags), pagination, search input, and tag filter buttons in `admin-ui/src/pages/PagesPage.tsx`
-- [ ] T021 [US1] Add image proxy URL rendering for thumbnails using `client.proxyImageUrl()` in `admin-ui/src/pages/PagesPage.tsx`
-- [ ] T022 [US1] Wire PagesPage as default route (`/admin`) in `admin-ui/src/App.tsx`
+- [X] T019 [US1] Implement `usePages(skip, limit)` and `useSearch(q, skip, limit)` query hooks in `admin-ui/src/hooks/usePages.ts`
+- [X] T020 [US1] Implement `PagesPage` with TanStack Table (columns: thumbnail, URL, type, source, tags), pagination, search input, and tag filter buttons in `admin-ui/src/pages/PagesPage.tsx`
+- [X] T021 [US1] Add image proxy URL rendering for thumbnails using `client.proxyImageUrl()` in `admin-ui/src/pages/PagesPage.tsx`
+- [X] T022 [US1] Wire PagesPage as default route (`/admin`) in `admin-ui/src/App.tsx`
+- [X] T044 [US1] Add source filter dropdown to PagesPage; add `GET /api/sources` endpoint and `source=` query param to items/search in `fastapi-image-search/main.py`, `fastapi-image-search/db.py`, `admin-ui/src/api/client.ts`, `admin-ui/src/pages/PagesPage.tsx`
 
 **Checkpoint**: Browse and search works end-to-end at `/admin`. Validate with quickstart.md US1 scenarios.
 
@@ -76,10 +77,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] Implement `useCreatePage()`, `useUpdatePage()`, `useDeletePage()` mutation hooks with query invalidation in `admin-ui/src/hooks/usePages.ts`
-- [ ] T024 [US2] Implement page create/edit form modal with validation (URL required, type selection, tag input) in `admin-ui/src/pages/PagesPage.tsx`
-- [ ] T025 [US2] Add delete button with ConfirmDialog to page rows in `admin-ui/src/pages/PagesPage.tsx`
-- [ ] T026 [US2] Add "Add Page" button to PagesPage toolbar triggering the create modal in `admin-ui/src/pages/PagesPage.tsx`
+- [X] T023 [US2] Implement `useCreatePage()`, `useUpdatePage()`, `useDeletePage()` mutation hooks with query invalidation in `admin-ui/src/hooks/usePages.ts`
+- [X] T024 [US2] Implement page create/edit form modal with validation (URL required, type selection, tag input) in `admin-ui/src/pages/PagesPage.tsx`
+- [X] T025 [US2] Add delete button with ConfirmDialog to page rows in `admin-ui/src/pages/PagesPage.tsx`
+- [X] T026 [US2] Add "Add Page" button to PagesPage toolbar triggering the create modal in `admin-ui/src/pages/PagesPage.tsx`
 
 **Checkpoint**: Full page CRUD works. Validate with quickstart.md US2 scenarios.
 
@@ -93,10 +94,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Implement `useTags(skip, limit)`, `useCreateTag()`, `useUpdateTag()`, `useDeleteTag()`, `useTranslateAll()`, `useToggleBlocked()` hooks in `admin-ui/src/hooks/useTags.ts`
-- [ ] T028 [US3] Implement `TagsPage` with TanStack Table (columns: name, translation, blocked status), pagination, and CRUD modals in `admin-ui/src/pages/TagsPage.tsx`
-- [ ] T029 [US3] Add "Translate All" button with loading state and success toast in `admin-ui/src/pages/TagsPage.tsx`
-- [ ] T030 [US3] Add blocked toggle per tag row with immediate update in `admin-ui/src/pages/TagsPage.tsx`
+- [X] T027 [US3] Implement `useTags(skip, limit)`, `useCreateTag()`, `useUpdateTag()`, `useDeleteTag()`, `useTranslateAll()`, `useToggleBlocked()` hooks in `admin-ui/src/hooks/useTags.ts`
+- [X] T028 [US3] Implement `TagsPage` with TanStack Table (columns: name, translation, blocked status), pagination, and CRUD modals in `admin-ui/src/pages/TagsPage.tsx`
+- [X] T029 [US3] Add "Translate All" button with loading state and success toast in `admin-ui/src/pages/TagsPage.tsx`
+- [X] T030 [US3] Add blocked toggle per tag row with immediate update in `admin-ui/src/pages/TagsPage.tsx`
+- [X] T045 [US3] Add tag name search input (server-side `q=` filter) and "View" button per row (navigates to `/?q=<tag>`) in `admin-ui/src/pages/TagsPage.tsx`; add `q=` param support to `GET /api/tags` in `fastapi-image-search/db.py` and `fastapi-image-search/main.py`
 
 **Checkpoint**: Tag management works. Validate with quickstart.md US3 scenarios.
 
@@ -110,10 +112,11 @@
 
 ### Implementation for User Story 4
 
-- [ ] T031 [US4] Implement `useDevices(includeInactive)`, `useRenameDevice()`, `useToggleAdmin()`, `useDeactivateDevice()`, `useMergeDevices()` hooks in `admin-ui/src/hooks/useDevices.ts`
-- [ ] T032 [US4] Implement `DevicesPage` with TanStack Table (columns: name, ID, registered_at, active, admin), "Show inactive" toggle in `admin-ui/src/pages/DevicesPage.tsx`
-- [ ] T033 [US4] Add rename modal, admin toggle checkbox, and deactivate button with ConfirmDialog in `admin-ui/src/pages/DevicesPage.tsx`
-- [ ] T034 [US4] Add merge devices dialog (source/target selection dropdowns, confirm) in `admin-ui/src/pages/DevicesPage.tsx`
+- [X] T031 [US4] Implement `useDevices(includeInactive)`, `useRenameDevice()`, `useToggleAdmin()`, `useDeactivateDevice()`, `useMergeDevices()` hooks in `admin-ui/src/hooks/useDevices.ts`
+- [X] T032 [US4] Implement `DevicesPage` with TanStack Table (columns: name, ID, registered_at, active, admin), "Show inactive" toggle in `admin-ui/src/pages/DevicesPage.tsx`
+- [X] T033 [US4] Add rename modal, admin toggle checkbox, and deactivate button with ConfirmDialog in `admin-ui/src/pages/DevicesPage.tsx`
+- [X] T034 [US4] Add merge devices dialog (source/target selection dropdowns, confirm) in `admin-ui/src/pages/DevicesPage.tsx`
+- [X] T046 [US4] Add client-side device name filter input above the devices table in `admin-ui/src/pages/DevicesPage.tsx`
 
 **Checkpoint**: Device management works. Validate with quickstart.md US4 scenarios.
 
@@ -127,10 +130,10 @@
 
 ### Implementation for User Story 5
 
-- [ ] T035 [US5] Implement `useInsightsSummary()`, `useTopTags()`, `useTopImages()`, `useInterests()`, `useDeviceTimeline(deviceId)` hooks in `admin-ui/src/hooks/useInsights.ts`
-- [ ] T036 [US5] Implement `InsightsPage` with summary cards (per-child views/details/prints), top tags, top images grid, shared/unique interests in `admin-ui/src/pages/InsightsPage.tsx`
-- [ ] T037 [US5] Implement `DeviceTimelinePage` with chronological event list (type, thumbnail, timestamp) grouped by date in `admin-ui/src/pages/DeviceTimelinePage.tsx`
-- [ ] T038 [US5] Add click-through from child summary card to `/admin/insights/:deviceId` timeline in `admin-ui/src/pages/InsightsPage.tsx`
+- [X] T035 [US5] Implement `useInsightsSummary()`, `useTopTags()`, `useTopImages()`, `useInterests()`, `useDeviceTimeline(deviceId)` hooks in `admin-ui/src/hooks/useInsights.ts`
+- [X] T036 [US5] Implement `InsightsPage` with summary cards (per-child views/details/prints), top tags, top images grid, shared/unique interests in `admin-ui/src/pages/InsightsPage.tsx`
+- [X] T037 [US5] Implement `DeviceTimelinePage` with chronological event list (type, thumbnail, timestamp) grouped by date in `admin-ui/src/pages/DeviceTimelinePage.tsx`
+- [X] T038 [US5] Add click-through from child summary card to `/admin/insights/:deviceId` timeline in `admin-ui/src/pages/InsightsPage.tsx`
 
 **Checkpoint**: Insights and timeline work. Validate with quickstart.md US5 scenarios.
 
@@ -138,11 +141,12 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T039 Build production output to `fastapi-image-search/static/admin/` via `npm run build` in `admin-ui/vite.config.ts`
+- [X] T039 Build production output to `fastapi-image-search/static/admin/` via `npm run build` in `admin-ui/vite.config.ts`
 - [ ] T040 Add error boundary with connection error + retry for backend unreachable in `admin-ui/src/App.tsx`
-- [ ] T041 Add loading skeletons/spinners for all data-fetching views in `admin-ui/src/components/`
-- [ ] T042 Validate all quickstart.md scenarios side-by-side with old dashboard
-- [ ] T043 Restart service `systemctl --user restart km-kraft.service` and verify `/admin` serves the React dashboard
+- [X] T041 Add loading skeletons/spinners for all data-fetching views in `admin-ui/src/components/`
+- [X] T042 Validate all quickstart.md scenarios side-by-side with old dashboard
+- [X] T043 Restart service `systemctl --user restart km-kraft.service` and verify `/admin` serves the React dashboard
+- [X] T047 [US3] Add "View" button per tag row navigating to Pages filtered by tag name (`/?q=<tag>`) using URL search params via `validateSearch` in `admin-ui/src/routeTree.tsx`
 
 ---
 
