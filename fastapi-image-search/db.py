@@ -290,14 +290,55 @@ async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, 
         return [await _build_item_dict(db, r) for r in rows]
 
 
-async def get_tags(db: aiosqlite.Connection, limit: int) -> list[dict[str, Any]]:
-    """Return sorted unique non-blocked tags with id and translation."""
-    async with db.execute(
-        "SELECT id, name, id_translation FROM tags WHERE blocked = 0 ORDER BY name LIMIT ?", (limit,)
-    ) as cursor:
+async def get_tags(
+    db: aiosqlite.Connection,
+    limit: int,
+    q: str | None = None,
+    order_by: str = "name",
+) -> list[dict[str, Any]]:
+    """Return non-blocked tags with optional prefix filter and popularity ordering.
+
+    Args:
+        limit: Maximum number of tags to return.
+        q: Optional prefix string to filter tag names (case-insensitive).
+        order_by: Sort order — "name" (alphabetical) or "popularity" (print count desc).
+    """
+    conditions = ["t.blocked = 0"]
+    params: list[Any] = []
+
+    if q:
+        conditions.append("t.name LIKE ?")
+        params.append(f"{q}%")
+
+    where = " AND ".join(conditions)
+
+    if order_by == "popularity":
+        sql = f"""
+            SELECT t.id, t.name, t.id_translation,
+                   COUNT(ae.rowid) AS print_count
+            FROM tags t
+            LEFT JOIN page_tags pt ON pt.tag_id = t.id
+            LEFT JOIN activity_events ae ON CAST(ae.image_id AS INTEGER) = pt.page_id
+                AND ae.event_type = 'print'
+            WHERE {where}
+            GROUP BY t.id
+            ORDER BY print_count DESC, t.name ASC
+            LIMIT ?
+        """
+    else:
+        sql = f"""
+            SELECT id, name, id_translation
+            FROM tags t
+            WHERE {where}
+            ORDER BY name ASC
+            LIMIT ?
+        """
+
+    params.append(limit)
+    async with db.execute(sql, params) as cursor:
         rows = await cursor.fetchall()
     return [
-        {"id": row["id"], "name": row["name"], "id_translation": row["id_translation"]}
+        {"name": row["name"], "id_translation": row["id_translation"]}
         for row in rows
     ]
 

@@ -4,9 +4,12 @@ import { colors } from '../theme';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onSubmit?: (query: string) => void;
 }
 
-export function SearchBar({ onSearch }: SearchBarProps) {
+export function SearchBar({ onSearch, onFocus, onBlur, onSubmit }: SearchBarProps) {
   const [text, setText] = useState('');
 
   const handleChange = (value: string) => {
@@ -30,6 +33,9 @@ export function SearchBar({ onSearch }: SearchBarProps) {
         autoCorrect={false}
         returnKeyType="search"
         accessibilityLabel="Search images"
+        onFocus={onFocus}
+        onBlur={onBlur}
+        onSubmitEditing={() => onSubmit?.(text)}
       />
       {text.length > 0 && (
         <Pressable

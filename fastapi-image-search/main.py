@@ -230,11 +230,13 @@ async def api_get_related(
 
 
 @app.get("/api/tags")
-async def api_get_tags(limit: int = 10):
-    """Get unique tags with limit"""
+async def api_get_tags(limit: int = 10, q: str | None = None, order_by: str = "name"):
+    """Get non-blocked tags. Supports prefix filter (q=) and popularity ordering (order_by=popularity)."""
+    if order_by not in ("name", "popularity"):
+        raise HTTPException(status_code=400, detail="order_by must be 'name' or 'popularity'")
     try:
         async with get_db() as db:
-            return await get_tags(db, limit)
+            return await get_tags(db, limit, q=q, order_by=order_by)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 

@@ -5,7 +5,7 @@ import type { Item } from '../types/api';
 
 const PAGE_SIZE = 20;
 
-export function useSearch(query: string) {
+export function useSearch(query: string, enabled = true) {
   const client = useApiClient();
   const debouncedQuery = useDebounce(query, 400);
 
@@ -16,6 +16,6 @@ export function useSearch(query: string) {
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length === PAGE_SIZE ? (lastPageParam as number) + PAGE_SIZE : undefined,
     placeholderData: keepPreviousData,
-    enabled: debouncedQuery.length > 0,
+    enabled: enabled && debouncedQuery.length > 0,
   });
 }

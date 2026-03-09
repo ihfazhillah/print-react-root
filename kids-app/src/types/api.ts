@@ -39,3 +39,8 @@ export interface PrintResponse {
 export interface ApiError {
   detail: string;
 }
+
+export interface Suggestion {
+  name: string;
+  id_translation: string | null;
+}
