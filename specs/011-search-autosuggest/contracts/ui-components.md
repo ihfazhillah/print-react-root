@@ -65,7 +65,11 @@ showSuggestions  = showDiscovery || showAutocomplete
 
 When `showSuggestions` is true, the image grid (`FlatList`) is replaced by `<SuggestionList>`.
 
-When a suggestion is selected:
+When a suggestion is selected or manual submit fires:
+1. `setSearchQuery(term)` — triggers search
+2. `setSearchFocused(false)` — hides suggestions, shows grid with results
+
+**Search-as-you-type suppression**: `useSearch` is only enabled when `!suggestionsActive`. While suggestions are showing, the search query hook does not fire.
 1. `setSearchQuery(term)` — triggers debounced search
 2. `setSearchFocused(false)` — hides suggestions, shows grid with results
 
