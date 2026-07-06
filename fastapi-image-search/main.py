@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import logging
 from collections import OrderedDict
 from contextlib import asynccontextmanager
