@@ -16,6 +16,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-21
 - Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite (backend); @tanstack/react-query, expo-router (mobile) (009-personalized-feed)
 - TypeScript 5.x, React 19 + @tanstack/react-query, @tanstack/react-table, @tanstack/react-router, Vite (010-react-admin)
 - N/A (consumes existing backend API) (010-react-admin)
+- Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite (backend); @tanstack/react-query, expo-router (mobile — existing) (011-search-autosuggest)
 
 - TypeScript 5.x on React Native 0.81 (Expo SDK 54) + expo ~54.0.33, expo-router ~6.0.23, expo-image ~3.0.11, @tanstack/react-query ^5.90.x, @react-native-async-storage/async-storage ~2.2.0, expo-network ~8.0.8 (001-kids-mobile-app)
 
@@ -67,9 +68,9 @@ respected in future dependency changes:
    Babel config or installing Babel plugins.
 
 ## Recent Changes
+- 011-search-autosuggest: Added Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite (backend); @tanstack/react-query, expo-router (mobile — existing)
 - 010-react-admin: Added TypeScript 5.x, React 19 + @tanstack/react-query, @tanstack/react-table, @tanstack/react-router, Vite
 - 009-personalized-feed: Added Python 3.10+ (backend), TypeScript 5.x / React Native 0.81 / Expo SDK 54 (mobile) + FastAPI, aiosqlite (backend); @tanstack/react-query, expo-router (mobile)
-- 008-scrape-coloring-sites: Added Python 3.10+ (existing backend) + httpx, BeautifulSoup4 (existing); Playwright (new, for JS-rendered sites)
 
 
 <!-- MANUAL ADDITIONS START -->
