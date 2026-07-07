@@ -54,6 +54,7 @@ from db import (
 )
 from print_handlers import get_print_handler
 from printer import get_printer_service
+from category_api import get_categories, get_category_subcategories, get_category_items
 
 log = logging.getLogger(__name__)
 
@@ -516,6 +517,9 @@ _image_cache: OrderedDict[str, tuple] = OrderedDict()
 _image_cache_bytes = 0
 IMAGE_CACHE_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
 
+# Shared client for connection pooling — verify=False for untrusted SSL
+_proxy_client = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(30.0, connect=10.0))
+
 
 @app.get("/api/proxy-image")
 async def proxy_image(url: str):
@@ -527,20 +531,19 @@ async def proxy_image(url: str):
         return Response(content=content, media_type=content_type)
 
     try:
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            content_type = response.headers.get("content-type", "image/webp")
-            size = len(response.content)
+        response = await _proxy_client.get(url)
+        response.raise_for_status()
+        content_type = response.headers.get("content-type", "image/webp")
+        size = len(response.content)
 
-            while _image_cache and _image_cache_bytes + size > IMAGE_CACHE_MAX_BYTES:
-                _, (_, evicted) = _image_cache.popitem(last=False)
-                _image_cache_bytes -= len(evicted)
+        while _image_cache and _image_cache_bytes + size > IMAGE_CACHE_MAX_BYTES:
+            _, (_, evicted) = _image_cache.popitem(last=False)
+            _image_cache_bytes -= len(evicted)
 
-            _image_cache[url] = (content_type, response.content)
-            _image_cache_bytes += size
+        _image_cache[url] = (content_type, response.content)
+        _image_cache_bytes += size
 
-            return Response(content=response.content, media_type=content_type)
+        return Response(content=response.content, media_type=content_type)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -733,7 +736,42 @@ async def api_bulk_block_tags(tag_ids: list[int], blocked: bool = True):
     return {"updated": count, "blocked": blocked}
 
 
+# ---------------------------------------------------------------------------
+# Kids App: Category Endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/categories")
+async def api_get_categories(limit: int = 50, offset: int = 0):
+    """Get list of all categories with metadata."""
+    try:
+        async with get_db() as db:
+            return await get_categories(db, limit, offset)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.get("/api/categories/{category_id}/subcategories")
+async def api_get_category_subcategories(category_id: int):
+    """Get subcategories for a specific category with example images."""
+    try:
+        async with get_db() as db:
+            return await get_category_subcategories(db, category_id)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.get("/api/categories/{category_id}/items")
+async def api_get_category_items(category_id: int, skip: int = 0, limit: int = 20):
+    """Get images for a specific category with pagination."""
+    try:
+        async with get_db() as db:
+            return await get_category_items(db, category_id, skip, limit)
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    uvicorn.run(app, host="0.0.0.0", port=8081, workers=4)
