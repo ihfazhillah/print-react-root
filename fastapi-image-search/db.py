@@ -132,6 +132,36 @@ async def init_db(db_path: str | None = None) -> None:
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_tags_blocked ON tags(blocked)"
         )
+
+        # Migration: add makeup/tata rias tags for beauty-related pages (#77)
+        try:
+            await db.execute(
+                "INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('makeup', 'tata rias', 0)"
+            )
+            await db.execute(
+                "INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('make up', 'alat dandan', 0)"
+            )
+            await db.execute(
+                "INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('rias', 'rias', 0)"
+            )
+            # Get tag ids
+            cursor = await db.execute("SELECT id FROM tags WHERE name = 'makeup'")
+            makeup_id = (await cursor.fetchone())[0]
+            cursor2 = await db.execute("SELECT id FROM tags WHERE name = 'make up'")
+            makeup2_id = (await cursor2.fetchone())[0]
+            cursor3 = await db.execute("SELECT id FROM tags WHERE name = 'rias'")
+            rias_id = (await cursor3.fetchone())[0]
+            # Tag all pages with beauty-related tags
+            beauty_tag_ids = (3258, 50, 558, 977, 5781, 63270, 211065, 4983, 4984)
+            for tid in (makeup_id, makeup2_id, rias_id):
+                await db.execute(
+                    f"INSERT OR IGNORE INTO page_tags (page_id, tag_id) "
+                    f"SELECT pt.page_id, {tid} FROM page_tags pt "
+                    f"WHERE pt.tag_id IN ({', '.join(str(x) for x in beauty_tag_ids)})"
+                )
+        except Exception:
+            pass  # Migration already ran or DB incompatible
+
         await db.commit()
 
 

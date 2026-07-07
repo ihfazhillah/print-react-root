@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_pages_source ON printable_pages(source);
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
+    id_translation TEXT NOT NULL DEFAULT '',
     blocked INTEGER NOT NULL DEFAULT 0
 );
 
@@ -146,6 +147,20 @@ def seed(data_path: str, db_path: str, source: str = "krokotak") -> dict:
         else:
             prints += 1
 
+    # Insert beauty tags for makeup/tata rias search (#77)
+    conn.execute("INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('makeup', 'tata rias', 0)")
+    conn.execute("INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('make up', 'alat dandan', 0)")
+    conn.execute("INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('rias', 'rias', 0)")
+    makeup_id = conn.execute("SELECT id FROM tags WHERE name = 'makeup'").fetchone()[0]
+    makeup2_id = conn.execute("SELECT id FROM tags WHERE name = 'make up'").fetchone()[0]
+    rias_id = conn.execute("SELECT id FROM tags WHERE name = 'rias'").fetchone()[0]
+    beauty_tag_ids = (3258, 50, 558, 977, 5781, 63270, 211065, 4983, 4984)
+    for tid in (makeup_id, makeup2_id, rias_id):
+        conn.execute(
+            f"INSERT OR IGNORE INTO page_tags (page_id, tag_id) "
+            f"SELECT pt.page_id, {tid} FROM page_tags pt "
+            f"WHERE pt.tag_id IN ({', '.join(str(x) for x in beauty_tag_ids)})"
+        )
     conn.commit()
     tags_after = conn.execute("SELECT COUNT(*) FROM tags").fetchone()[0]
     tags_created = tags_after - tags_before
