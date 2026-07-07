@@ -109,7 +109,7 @@ test('caches results (staleTime 1h)', async () => {
   });
 
   const { result, rerender } = renderHook(
-    ({ id }) => useCategorySubcategories(id),
+    (props: { id: number }) => useCategorySubcategories(props.id),
     { wrapper: createWrapper(client), initialProps: { id: 1 } },
   );
 

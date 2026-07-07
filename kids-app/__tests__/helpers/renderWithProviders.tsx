@@ -19,6 +19,9 @@ export function createMockClient(overrides: Partial<ApiClient> = {}): ApiClient 
     proxyImageUrl: jest.fn(
       (url: string) => `http://test-host/api/proxy-image?url=${encodeURIComponent(url)}`,
     ),
+    getCategories: jest.fn().mockResolvedValue([]),
+    getCategorySubcategories: jest.fn().mockResolvedValue([]),
+    getCategoryItems: jest.fn().mockResolvedValue([]),
     ...overrides,
   };
 }
