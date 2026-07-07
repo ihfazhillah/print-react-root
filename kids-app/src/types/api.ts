@@ -44,3 +44,34 @@ export interface Suggestion {
   name: string;
   id_translation: string | null;
 }
+
+export interface ImageItem {
+  id: number;
+  url: string;
+  thumbnail?: string;
+  print_count: number;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  emoji: string;
+  tag_count: number;
+  print_count: number;
+  example_images: ImageItem[];
+}
+
+export interface CategorySubcategory {
+  id: number;
+  name: string;
+  emoji: string;
+  example_images: ImageItem[];
+}
+
+export interface CategoryItem {
+  id: number;
+  url: string;
+  thumbnail?: string;
+  print_count: number;
+  tags: string[];
+}

@@ -1,4 +1,4 @@
-import type { ApiError, Item, PrintResponse, Suggestion } from '../types/api';
+import type { ApiError, Category, CategoryItem, CategorySubcategory, ImageItem, Item, PrintResponse, Suggestion } from '../types/api';
 
 export class ApiRequestError extends Error {
   detail: string;
@@ -22,6 +22,9 @@ export interface ApiClient {
   getDiscoverySuggestions(limit?: number): Promise<Suggestion[]>;
   printImage(url: string): Promise<PrintResponse>;
   proxyImageUrl(url: string): string;
+  getCategories(limit?: number, offset?: number): Promise<Category[]>;
+  getCategorySubcategories(categoryId: number): Promise<CategorySubcategory[]>;
+  getCategoryItems(categoryId: number, skip?: number, limit?: number): Promise<CategoryItem[]>;
 }
 
 export function createApiClient(baseUrl: string): ApiClient {
@@ -65,5 +68,14 @@ export function createApiClient(baseUrl: string): ApiClient {
       request<PrintResponse>(`${baseUrl}/api/print-image?url=${encodeURIComponent(url)}`),
 
     proxyImageUrl: (url) => `${baseUrl}/api/proxy-image?url=${encodeURIComponent(url)}`,
+
+    getCategories: (limit = 50, offset = 0) =>
+      request<Category[]>(`${baseUrl}/api/categories?limit=${limit}&offset=${offset}`),
+
+    getCategorySubcategories: (categoryId) =>
+      request<CategorySubcategory[]>(`${baseUrl}/api/categories/${categoryId}/subcategories`),
+
+    getCategoryItems: (categoryId, skip = 0, limit = 20) =>
+      request<CategoryItem[]>(`${baseUrl}/api/categories/${categoryId}/items?skip=${skip}&limit=${limit}`),
   };
 }
