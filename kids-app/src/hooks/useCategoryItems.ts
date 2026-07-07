@@ -6,14 +6,15 @@ const PAGE_SIZE = 20;
 
 export interface UseCategoryItemsOptions {
   categoryId: number;
+  subcategoryId?: number;
   enabled?: boolean;
 }
 
-export function useCategoryItems({ categoryId, enabled = true }: UseCategoryItemsOptions) {
+export function useCategoryItems({ categoryId, subcategoryId, enabled = true }: UseCategoryItemsOptions) {
   const client = useApiClient();
 
   return useInfiniteQuery<CategoryItem[], Error>({
-    queryKey: ['categoryItems', categoryId],
+    queryKey: ['categoryItems', categoryId, subcategoryId],
     queryFn: ({ pageParam = 0 }) =>
       client.getCategoryItems(categoryId, pageParam as number, PAGE_SIZE),
     initialPageParam: 0,
