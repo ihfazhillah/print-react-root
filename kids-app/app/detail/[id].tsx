@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useApiClient } from '../../src/api/apiClientContext';
 import { usePrintImage } from '../../src/hooks/usePrintImage';
 import { useActivityTracking } from '../../src/hooks/useActivityTracking';
+import { analytics } from '../../src/services/AnalyticsService';
 import { TagList } from '../../src/components/TagList';
 import { PrintButton } from '../../src/components/PrintButton';
 import { RelatedSection } from '../../src/components/RelatedSection';
@@ -61,6 +62,7 @@ export default function DetailScreen() {
         <View style={styles.section}>
           <PrintButton
             onPrint={() => {
+              analytics.track('print', item.url);
               printMutation.mutate(item.url);
               trackPrint(String(item.id));
             }}

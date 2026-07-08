@@ -12,7 +12,9 @@ import {
 import { ApiClientProvider } from '../src/api/ApiClientProvider';
 import { ServerConfigProvider } from '../src/context/ServerConfigContext';
 import { useDeviceRegistration } from '../src/hooks/useDeviceRegistration';
+import { getBaseUrl } from '../src/hooks/useServerConfig';
 import { UpdateProvider } from '../src/context/UpdateContext';
+import { analytics } from '../src/services/AnalyticsService';
 import { UpdateBar } from '../src/components/UpdateBar';
 import { colors } from '../src/theme';
 
@@ -45,9 +47,17 @@ function useAppStateFocus() {
   }, []);
 }
 
-/** Triggers device auto-registration once the app is connected. */
+/** Triggers device auto-registration and initializes analytics. */
 function DeviceAutoRegister() {
-  useDeviceRegistration();
+  const { deviceId } = useDeviceRegistration();
+  const { getBaseUrl } = useServerConfig();
+
+  useEffect(() => {
+    if (deviceId) {
+      analytics.init(deviceId, getBaseUrl());
+    }
+  }, [deviceId]);
+
   return null;
 }
 

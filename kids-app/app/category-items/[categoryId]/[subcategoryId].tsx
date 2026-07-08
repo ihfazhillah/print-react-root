@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { CategoryItemGrid } from '../../../src/components/CategoryItemGrid';
 import { useCategoryItems } from '../../../src/hooks/useCategoryItems';
+import { analytics } from '../../../src/services/AnalyticsService';
 import type { CategoryItem } from '../../../src/types/api';
 
 export default function CategoryItemsScreen() {
@@ -29,6 +30,7 @@ export default function CategoryItemsScreen() {
 
   const handleItemPress = useCallback(
     (item: CategoryItem) => {
+      analytics.track('select', item.url);
       // Open image in new browser tab / image viewer
       if (typeof window !== 'undefined') {
         window.open(item.url, '_blank');

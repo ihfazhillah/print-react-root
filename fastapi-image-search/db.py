@@ -133,7 +133,18 @@ async def init_db(db_path: str | None = None) -> None:
             "CREATE INDEX IF NOT EXISTS idx_tags_blocked ON tags(blocked)"
         )
 
-        # Migration: add makeup/tata rias tags for beauty-related pages (#77)
+        # Migration: add device_id column to interactions table
+        try:
+            await db.execute(
+                "ALTER TABLE interactions ADD COLUMN device_id TEXT REFERENCES devices(id)"
+            )
+        except aiosqlite.OperationalError:
+            pass  # Column already exists
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_interactions_device ON interactions(device_id)"
+        )
+
+        # Migration: add makeup/tata rias tags (removed heuristic — tag explicitly via data.json)
         try:
             await db.execute(
                 "INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('makeup', 'tata rias', 0)"
@@ -144,23 +155,8 @@ async def init_db(db_path: str | None = None) -> None:
             await db.execute(
                 "INSERT OR IGNORE INTO tags (name, id_translation, blocked) VALUES ('rias', 'rias', 0)"
             )
-            # Get tag ids
-            cursor = await db.execute("SELECT id FROM tags WHERE name = 'makeup'")
-            makeup_id = (await cursor.fetchone())[0]
-            cursor2 = await db.execute("SELECT id FROM tags WHERE name = 'make up'")
-            makeup2_id = (await cursor2.fetchone())[0]
-            cursor3 = await db.execute("SELECT id FROM tags WHERE name = 'rias'")
-            rias_id = (await cursor3.fetchone())[0]
-            # Tag all pages with beauty-related tags
-            beauty_tag_ids = (3258, 50, 558, 977, 5781, 63270, 211065, 4983, 4984)
-            for tid in (makeup_id, makeup2_id, rias_id):
-                await db.execute(
-                    f"INSERT OR IGNORE INTO page_tags (page_id, tag_id) "
-                    f"SELECT pt.page_id, {tid} FROM page_tags pt "
-                    f"WHERE pt.tag_id IN ({', '.join(str(x) for x in beauty_tag_ids)})"
-                )
         except Exception:
-            pass  # Migration already ran or DB incompatible
+            pass
 
         await db.commit()
 
@@ -569,6 +565,19 @@ async def get_page(db: aiosqlite.Connection, page_id: int) -> dict[str, Any] | N
     return await _build_item_dict(db, row)
 
 
+async def get_page_by_url(
+    db: aiosqlite.Connection, url: str
+) -> dict[str, Any] | None:
+    """Get a page by its URL. Returns page dict or None."""
+    async with db.execute(
+        "SELECT * FROM printable_pages WHERE url = ?", (url,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        return None
+    return await _build_item_dict(db, row)
+
+
 async def create_page(db: aiosqlite.Connection, data: dict[str, Any]) -> dict[str, Any]:
     """Insert a new page with tags. Returns the created page dict."""
     cursor = await db.execute(
@@ -651,10 +660,10 @@ async def record_interaction(db: aiosqlite.Connection, data: dict[str, Any]) -> 
     """Record an interaction. Returns the created interaction dict."""
     cursor = await db.execute(
         """
-        INSERT INTO interactions (page_id, interaction_type, session_id)
-        VALUES (?, ?, ?)
+        INSERT INTO interactions (page_id, interaction_type, session_id, device_id)
+        VALUES (?, ?, ?, ?)
         """,
-        (data["page_id"], data["interaction_type"], data.get("session_id")),
+        (data["page_id"], data["interaction_type"], data.get("session_id"), data.get("device_id")),
     )
     await db.commit()
     interaction_id = cursor.lastrowid
@@ -667,6 +676,7 @@ async def record_interaction(db: aiosqlite.Connection, data: dict[str, Any]) -> 
         "page_id": row["page_id"],
         "interaction_type": row["interaction_type"],
         "session_id": row["session_id"],
+        "device_id": row["device_id"],
         "created_at": row["created_at"],
     }
 
@@ -706,6 +716,7 @@ async def get_interactions(
             "page_id": row["page_id"],
             "interaction_type": row["interaction_type"],
             "session_id": row["session_id"],
+            "device_id": row["device_id"],
             "created_at": row["created_at"],
         }
         for row in rows
@@ -785,6 +796,26 @@ async def link_android_id(
     )
     await db.commit()
     return True
+
+
+async def get_device_by_id(
+    db: aiosqlite.Connection, device_id: str
+) -> dict[str, Any] | None:
+    """Look up an active device by its device_id. Returns device dict or None."""
+    async with db.execute(
+        "SELECT * FROM devices WHERE id = ? AND is_active = 1", (device_id,)
+    ) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        return None
+    return {
+        "device_id": row["id"],
+        "device_name": row["device_name"],
+        "device_token": row["device_token"],
+        "registered_at": row["registered_at"],
+        "last_activity_at": row["last_activity_at"],
+        "is_active": bool(row["is_active"]),
+    }
 
 
 async def get_device_by_token(

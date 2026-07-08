@@ -15,6 +15,7 @@ import { useRecommendations } from '../src/hooks/useRecommendations';
 import { useActivityTracking } from '../src/hooks/useActivityTracking';
 import { useAutocomplete, useDiscovery } from '../src/hooks/useSuggestions';
 import { useModeToggle } from '../src/hooks/useModeToggle';
+import { analytics } from '../src/services/AnalyticsService';
 import { isCollection } from '../src/types/api';
 import { colors } from '../src/theme';
 import type { Item } from '../src/types/api';
@@ -102,6 +103,7 @@ export default function HomeScreen() {
 
   const handleItemPress = useCallback(
     (item: Item, globalIndex: number) => {
+      analytics.track('select', item.url);
       const route = isCollection(item) ? '/collection/[id]' : '/detail/[id]';
       router.push({
         pathname: route,
@@ -113,6 +115,7 @@ export default function HomeScreen() {
 
   const handleRecPress = useCallback(
     (item: Item) => {
+      analytics.track('select', item.url);
       const route = isCollection(item) ? '/collection/[id]' : '/detail/[id]';
       router.push({
         pathname: route,

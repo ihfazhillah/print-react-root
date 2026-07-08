@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useApiClient } from '../../src/api/apiClientContext';
 import { ImageCard } from '../../src/components/ImageCard';
 import { EmptyState } from '../../src/components/EmptyState';
+import { analytics } from '../../src/services/AnalyticsService';
 import { isCollection } from '../../src/types/api';
 import { colors } from '../../src/theme';
 import type { CollectionItem, Item } from '../../src/types/api';
@@ -47,6 +48,7 @@ export default function CollectionScreen() {
 
   const handleImagePress = useCallback(
     (pressedItem: Item) => {
+      analytics.track('select', pressedItem.url);
       const route = isCollection(pressedItem) ? '/collection/[id]' : '/detail/[id]';
       router.push({
         pathname: route,

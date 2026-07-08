@@ -28,6 +28,7 @@ from db import (
     get_device_by_token,
     get_device_timeline,
     get_distinct_sources,
+    get_page_by_url,
     link_android_id,
     merge_devices,
     get_interactions,
@@ -133,6 +134,11 @@ class InteractionCreate(BaseModel):
     session_id: str | None = None
 
 
+class DeviceInteractionCreate(BaseModel):
+    page_url: str
+    interaction_type: str
+
+
 class DeviceRegister(BaseModel):
     initial_name: str
     android_id: str | None = None
@@ -159,6 +165,19 @@ class ActivityEventCreate(BaseModel):
 
 class DeviceAdminUpdate(BaseModel):
     is_admin: bool
+
+
+async def _get_authenticated_device(request: Request) -> dict:
+    """FastAPI dependency: validates Bearer token and returns device dict."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = auth[len("Bearer "):]
+    async with get_db() as db:
+        device = await get_device_by_token(db, token)
+    if device is None:
+        raise HTTPException(status_code=401, detail="Invalid or inactive device token")
+    return device
 
 
 # ---------------------------------------------------------------------------
@@ -440,6 +459,62 @@ async def api_get_interactions(
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
+@app.post("/api/interactions/device")
+async def api_record_device_interaction(
+    body: DeviceInteractionCreate,
+    device: dict = Depends(_get_authenticated_device),
+):
+    """Record an interaction by page_url. Resolves URL to page_id internally."""
+    if body.interaction_type not in ("select", "print"):
+        raise HTTPException(
+            status_code=400,
+            detail="interaction_type must be 'select' or 'print'",
+        )
+    try:
+        async with get_db() as db:
+            page = await get_page_by_url(db, body.page_url)
+            if page is None:
+                raise HTTPException(status_code=400, detail="page_url does not exist")
+            return await record_interaction(
+                db,
+                {
+                    "page_id": page["id"],
+                    "interaction_type": body.interaction_type,
+                    "device_id": device["device_id"],
+                },
+            )
+    except HTTPException:
+        raise
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.get("/api/interactions/device")
+async def api_get_device_interactions(
+    device: dict = Depends(_get_authenticated_device),
+    since: Optional[str] = None,
+    limit: int = 200,
+):
+    """Get interactions for the authenticated device, optionally since a timestamp."""
+    try:
+        async with get_db() as db:
+            all_interactions = await get_interactions(
+                db,
+                skip=0,
+                limit=2000,
+            )
+        # Filter by device_id in application layer
+        results = [
+            i for i in all_interactions if i.get("device_id") == device["device_id"]
+        ]
+        if since:
+            results = [i for i in results if i["created_at"] >= since]
+        results.sort(key=lambda x: x["created_at"], reverse=True)
+        return results[:limit]
+    except (aiosqlite.Error, OSError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
 # ---------------------------------------------------------------------------
 # Analytics endpoints (007-usage-insights)
 # ---------------------------------------------------------------------------
@@ -564,19 +639,6 @@ async def get_print_image(url: str):
 # ---------------------------------------------------------------------------
 # Device management endpoints
 # ---------------------------------------------------------------------------
-
-
-async def _get_authenticated_device(request: Request) -> dict:
-    """FastAPI dependency: validates Bearer token and returns device dict."""
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
-    token = auth[len("Bearer "):]
-    async with get_db() as db:
-        device = await get_device_by_token(db, token)
-    if device is None:
-        raise HTTPException(status_code=401, detail="Invalid or inactive device token")
-    return device
 
 
 @app.post("/api/devices/register", status_code=201)
