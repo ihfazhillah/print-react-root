@@ -26,6 +26,7 @@ from db import (
     get_all_tags,
     get_db,
     get_device_by_token,
+    get_device_filter,
     get_device_timeline,
     get_distinct_sources,
     get_page_by_url,
@@ -229,6 +230,7 @@ async def api_search_items(q: str = "", skip: int = 0, limit: int = 20, source: 
 async def api_get_related(
     item_id: int,
     session_id: Optional[str] = None,
+    device_id: Optional[str] = None,
 ):
     """Get related items based on searches/tags. Optionally records a view interaction."""
     try:
@@ -247,7 +249,7 @@ async def api_get_related(
                 except Exception:
                     pass  # Don't fail the request if tracking fails
 
-            return await get_related(db, item_id)
+            return await get_related(db, item_id, device_id=device_id)
     except (aiosqlite.Error, OSError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 

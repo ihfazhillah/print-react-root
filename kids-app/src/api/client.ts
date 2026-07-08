@@ -16,7 +16,7 @@ export interface ApiClient {
   baseUrl: string;
   getItems(skip?: number, limit?: number, deviceId?: string): Promise<Item[]>;
   search(q: string, skip?: number, limit?: number): Promise<Item[]>;
-  getRelated(itemIndex: number): Promise<Item[]>;
+  getRelated(itemIndex: number, deviceId?: string): Promise<Item[]>;
   getTags(limit?: number): Promise<string[]>;
   getSuggestions(q: string, limit?: number): Promise<Suggestion[]>;
   getDiscoverySuggestions(limit?: number): Promise<Suggestion[]>;
@@ -50,7 +50,11 @@ export function createApiClient(baseUrl: string): ApiClient {
         `${baseUrl}/api/search?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
       ),
 
-    getRelated: (itemIndex) => request<Item[]>(`${baseUrl}/api/related/${itemIndex}`),
+    getRelated: (itemIndex, deviceId?: string) => {
+      let url = `${baseUrl}/api/related/${itemIndex}`;
+      if (deviceId) url += `?device_id=${encodeURIComponent(deviceId)}`;
+      return request<Item[]>(url);
+    },
 
     getTags: (limit = 10) => request<string[]>(`${baseUrl}/api/tags?limit=${limit}`),
 

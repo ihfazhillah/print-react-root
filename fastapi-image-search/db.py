@@ -82,6 +82,12 @@ CREATE TABLE IF NOT EXISTS activity_events (
 CREATE INDEX IF NOT EXISTS idx_activity_device ON activity_events(device_id);
 CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON activity_events(event_timestamp);
+
+CREATE TABLE IF NOT EXISTS device_filters (
+    device_id TEXT NOT NULL PRIMARY KEY REFERENCES devices(id),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    filter_tags TEXT NOT NULL DEFAULT ''
+);
 """
 
 
@@ -143,6 +149,20 @@ async def init_db(db_path: str | None = None) -> None:
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_interactions_device ON interactions(device_id)"
         )
+
+        # Migration: create device_filters table for existing DBs
+        try:
+            await db.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS device_filters (
+                    device_id TEXT NOT NULL PRIMARY KEY REFERENCES devices(id),
+                    enabled INTEGER NOT NULL DEFAULT 0,
+                    filter_tags TEXT NOT NULL DEFAULT ''
+                );
+                """
+            )
+        except aiosqlite.OperationalError:
+            pass  # Table already exists
 
         # Migration: add makeup/tata rias tags (removed heuristic — tag explicitly via data.json)
         try:
@@ -218,6 +238,40 @@ _BLOCKED_TAG_FILTER = """
 """
 
 
+def _build_device_filter_clause(filter_config: dict | None) -> tuple[str, list[Any]]:
+    """Build SQL clause + params for device tag filter.
+
+    Returns (clause_string, params_list). If filter disabled or no tags, returns ('', []).
+    """
+    if not filter_config or not filter_config.get("enabled"):
+        return "", []
+    tags_str = filter_config.get("filter_tags", "")
+    if not tags_str:
+        return "", []
+    allowed = [t.strip() for t in tags_str.split(",") if t.strip()]
+    if not allowed:
+        return "", []
+    placeholders = ",".join("?" * len(allowed))
+    clause = f"AND p.id IN (SELECT pt3.page_id FROM page_tags pt3 JOIN tags t3 ON t3.id = pt3.tag_id WHERE t3.name IN ({placeholders}))"
+    return clause, allowed
+
+
+async def get_device_filter(db: aiosqlite.Connection, device_id: str) -> dict[str, Any] | None:
+    """Get device filter config. Returns None if device has no filter row."""
+    async with db.execute(
+        "SELECT device_id, enabled, filter_tags FROM device_filters WHERE device_id = ?",
+        (device_id,),
+    ) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        return None
+    return {
+        "device_id": row["device_id"],
+        "enabled": bool(row["enabled"]),
+        "filter_tags": row["filter_tags"],
+    }
+
+
 async def get_items(db: aiosqlite.Connection, skip: int, limit: int, source: str | None = None) -> list[dict[str, Any]]:
     """Return paginated top-level items (parent_id IS NULL), excluding blocked."""
     source_filter = "AND p.source = ?" if source is not None else ""
@@ -280,8 +334,18 @@ async def search_by_tag(
     return [await _build_item_dict(db, r) for r in rows]
 
 
-async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, Any]]:
-    """For collections: return child prints. For prints: return items sharing tags."""
+async def get_related(
+    db: aiosqlite.Connection, item_id: int, device_id: str | None = None
+) -> list[dict[str, Any]]:
+    """For collections: return child prints. For prints: return items sharing tags.
+
+    If device_id is provided and device filter is enabled, apply tag filter.
+    """
+    filter_config = None
+    if device_id:
+        filter_config = await get_device_filter(db, device_id)
+    df_clause, df_params = _build_device_filter_clause(filter_config)
+
     async with db.execute(
         "SELECT * FROM printable_pages WHERE id = ?", (item_id,)
     ) as cursor:
@@ -299,8 +363,9 @@ async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, 
         return [await _build_item_dict(db, r) for r in rows]
     else:
         # Find items sharing overlapping tags (exclude self)
+        params = [item_id, item_id, *df_params]
         async with db.execute(
-            """
+            f"""
             SELECT DISTINCT p.* FROM printable_pages p
             JOIN page_tags pt ON pt.page_id = p.id
             WHERE p.id != ?
@@ -308,9 +373,11 @@ async def get_related(db: aiosqlite.Connection, item_id: int) -> list[dict[str, 
               AND pt.tag_id IN (
                 SELECT tag_id FROM page_tags WHERE page_id = ?
               )
+              {_BLOCKED_TAG_FILTER}
+              {df_clause}
             ORDER BY p.id
             """,
-            (item_id, item_id),
+            params,
         ) as cursor:
             rows = await cursor.fetchall()
         return [await _build_item_dict(db, r) for r in rows]
@@ -1248,9 +1315,12 @@ async def get_personalized_items(
 
     Scoring: pages matching device's tag interests score higher,
     pages already interacted with are deprioritized.
+    Device filter: if enabled, show only pages with allowed tags.
     """
     affinity = await compute_tag_affinity(db, device_id)
     interacted = await get_interacted_page_ids(db, device_id)
+    filter_config = await get_device_filter(db, device_id)
+    df_clause, df_params = _build_device_filter_clause(filter_config)
 
     if not affinity:
         # No history — fall back to popularity-based ordering
@@ -1263,11 +1333,12 @@ async def get_personalized_items(
                 SELECT * FROM printable_pages p
                 WHERE p.parent_id IS NULL
                   {_BLOCKED_TAG_FILTER}
+                  {df_clause}
                 ORDER BY CASE p.id {pop_cases} ELSE 99999 END,
                          (p.id * 2654435761) % 2147483647
                 LIMIT ? OFFSET ?
                 """,
-                (limit, skip),
+                (*df_params, limit, skip),
             ) as cursor:
                 rows = await cursor.fetchall()
         else:
@@ -1277,10 +1348,11 @@ async def get_personalized_items(
                 SELECT * FROM printable_pages p
                 WHERE p.parent_id IS NULL
                   {_BLOCKED_TAG_FILTER}
+                  {df_clause}
                 ORDER BY (p.id * 2654435761) % 2147483647
                 LIMIT ? OFFSET ?
                 """,
-                (limit, skip),
+                (*df_params, limit, skip),
             ) as cursor:
                 rows = await cursor.fetchall()
         return [await _build_item_dict(db, r) for r in rows]
@@ -1316,10 +1388,11 @@ async def get_personalized_items(
         ) tag_score ON tag_score.page_id = p.id
         WHERE p.parent_id IS NULL
           {_BLOCKED_TAG_FILTER}
+          {df_clause}
         ORDER BY relevance DESC, (p.id * 2654435761) % 2147483647
         LIMIT ? OFFSET ?
         """,
-        (*interacted_list, *tag_ids, limit, skip),
+        (*interacted_list, *tag_ids, *df_params, limit, skip),
     ) as cursor:
         rows = await cursor.fetchall()
 
