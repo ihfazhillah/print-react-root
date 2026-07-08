@@ -774,4 +774,4 @@ async def api_get_category_items(category_id: int, skip: int = 0, limit: int = 2
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8081, workers=4)
+    uvicorn.run("main:app", host="0.0.0.0", port=8081)
