@@ -2,7 +2,7 @@
   "expo": {
     "name": "KM Kraft",
     "slug": "km-kraft",
-    "version": "4.0.2",
+    "version": "4.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kmkraft.printreact"
+      "package": "com.kmkraft.printreact",
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",

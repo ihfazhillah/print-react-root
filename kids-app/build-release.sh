@@ -29,8 +29,13 @@ echo "Building $APP_NAME $TAG (arch: $ARCH)"
 yes 2>/dev/null | sdkmanager --licenses > /dev/null 2>&1 || true
 
 # ─── Regenerate native project ───────────────────────────────────────
+# Hard-wipe android/ first. `expo prebuild --clean` alone once left a stale
+# MainApplication.kt under a nested package (com.kmkraft.printreact.printreact),
+# which shipped a ClassNotFoundException force-close in v4.0.2. Removing the dir
+# outright guarantees the entry classes are regenerated at the correct package.
 echo "Regenerating android/ with expo prebuild..."
 cd "$APP_DIR"
+rm -rf "$APP_DIR/android"
 npx expo prebuild --clean --platform android --no-install
 
 # Rename wrapper to avoid filter
@@ -44,6 +49,31 @@ if [ ! -f "$APK_PATH" ]; then
   echo "ERROR: Build failed — APK not found at $APK_PATH"
   exit 1
 fi
+
+# ─── Package-consistency guard ───────────────────────────────────────
+# Assert the Application class named by the manifest actually exists in the
+# APK's dex. Guards against the nested-package regression that shipped a
+# ClassNotFoundException force-close in v4.0.2.
+echo "Verifying APK package consistency..."
+AAPT2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
+if [ -z "$AAPT2" ]; then
+  echo "ERROR: aapt2 not found under \$ANDROID_HOME/build-tools; cannot verify APK."
+  exit 1
+fi
+APP_CLASS=$("$AAPT2" dump xmltree "$APK_PATH" --file AndroidManifest.xml 2>/dev/null \
+  | grep -m1 'application' -A30 | grep -m1 'android:name' \
+  | sed -E 's/.*="([^"]+)".*/\1/')
+if [ -z "$APP_CLASS" ]; then
+  echo "ERROR: could not read application android:name from manifest."
+  exit 1
+fi
+CLASS_DESC="L$(echo "$APP_CLASS" | tr '.' '/');"
+if ! unzip -p "$APK_PATH" 'classes*.dex' | strings -a | grep -qF "$CLASS_DESC"; then
+  echo "ERROR: $APP_CLASS not found in APK dex — package mismatch, aborting release."
+  echo "       (The manifest references a class the compiler did not emit under that package.)"
+  exit 1
+fi
+echo "Verified $APP_CLASS present in dex."
 
 APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
 echo ""
